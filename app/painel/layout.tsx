@@ -31,6 +31,12 @@ export default async function PainelLayout({
         <a href="/painel/clientes" className="hover:text-primary hover:underline">
           Clientes
         </a>
+        <a
+          href="/painel/assinaturas"
+          className="hover:text-primary hover:underline"
+        >
+          Assinaturas
+        </a>
         {isAdmin ? (
           <a
             href="/painel/usuarios"

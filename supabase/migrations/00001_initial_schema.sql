@@ -278,6 +278,13 @@ declare
   v_balance_after integer;
   v_transaction credit_transactions%rowtype;
 begin
+  -- security definer bypassa RLS: sem essa checagem, qualquer usuário
+  -- autenticado (inclusive CLIENTE) poderia chamar essa RPC diretamente
+  -- e manipular o próprio saldo. Uso de crédito é sempre mediado por staff.
+  if not is_staff() then
+    raise exception 'Acesso negado: apenas a equipe pode registrar transações de crédito.';
+  end if;
+
   select * into v_wallet
   from credit_wallets
   where id = p_wallet_id
