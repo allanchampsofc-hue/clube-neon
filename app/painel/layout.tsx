@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 export default async function PainelLayout({
   children,
 }: LayoutProps<"/painel">) {
-  const { user, role } = await requireStaff();
+  const { user, role, roles } = await requireStaff();
+  const isAdmin = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
+  const isSuperAdmin = roles.includes("SUPER_ADMIN");
 
   return (
     <div className="flex min-h-full flex-col">
@@ -22,6 +24,30 @@ export default async function PainelLayout({
           </Button>
         </form>
       </header>
+      <nav className="flex gap-4 border-b border-border bg-card px-6 py-2 text-sm">
+        <a href="/painel" className="hover:text-primary hover:underline">
+          Dashboard
+        </a>
+        <a href="/painel/clientes" className="hover:text-primary hover:underline">
+          Clientes
+        </a>
+        {isAdmin ? (
+          <a
+            href="/painel/usuarios"
+            className="hover:text-primary hover:underline"
+          >
+            Usuários
+          </a>
+        ) : null}
+        {isSuperAdmin ? (
+          <a
+            href="/painel/sistema"
+            className="hover:text-primary hover:underline"
+          >
+            Sistema
+          </a>
+        ) : null}
+      </nav>
       <main className="flex-1 p-6">{children}</main>
     </div>
   );
