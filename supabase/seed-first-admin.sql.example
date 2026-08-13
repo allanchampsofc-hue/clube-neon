@@ -1,0 +1,19 @@
+-- ============================================================================
+-- Promove o primeiro usuário a SUPER_ADMIN.
+--
+-- Não é uma migration (00002_...) porque depende de um UUID que só existe
+-- depois que o usuário for criado num projeto Supabase real. Rode manualmente
+-- uma única vez, no SQL Editor do Supabase, depois de:
+--
+--   1. Criar o projeto Supabase real e aplicar as migrations
+--      (supabase/migrations/00001_initial_schema.sql).
+--   2. Criar seu próprio usuário via Authentication > Users > Add user no
+--      painel do Supabase (ou pela tela /login, que hoje só faz login — se
+--      precisar de signUp, use o painel do Supabase mesmo).
+--   3. Copiar o UUID desse usuário (coluna "id" em Authentication > Users) e
+--      colar no lugar de SEU_USER_ID_AQUI abaixo.
+-- ============================================================================
+
+insert into user_roles (user_id, role_code)
+values ('SEU_USER_ID_AQUI', 'SUPER_ADMIN')
+on conflict (user_id, role_code) do nothing;
