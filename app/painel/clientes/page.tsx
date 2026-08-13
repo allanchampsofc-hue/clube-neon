@@ -1,6 +1,7 @@
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatCpf, onlyDigits } from "@/lib/cpf";
+import { formatCpf } from "@/lib/cpf";
+import { buildCustomerSearchFilter } from "@/lib/customers";
 import { Input } from "@/components/ui/input";
 import { Button, buttonVariants } from "@/components/ui/button";
 
@@ -20,15 +21,7 @@ export default async function PainelClientesPage({
 
   const trimmed = q?.trim();
   if (trimmed) {
-    // Remove vírgula/parênteses pra não quebrar (ou vazar) o filtro .or() do PostgREST.
-    const safe = trimmed.replace(/[,()]/g, "");
-    const digits = onlyDigits(trimmed);
-    const orParts = [`name.ilike.%${safe}%`, `member_number.ilike.%${safe}%`];
-    orParts.push(
-      digits ? `cpf.ilike.%${digits}%` : `cpf.ilike.%${safe}%`,
-      digits ? `phone.ilike.%${digits}%` : `phone.ilike.%${safe}%`,
-    );
-    query = query.or(orParts.join(","));
+    query = query.or(buildCustomerSearchFilter(trimmed));
   }
 
   const { data: customers } = await query;

@@ -37,6 +37,12 @@ export default async function PainelLayout({
         >
           Assinaturas
         </a>
+        <a
+          href="/painel/utilizacao"
+          className="hover:text-primary hover:underline"
+        >
+          Utilização
+        </a>
         {isAdmin ? (
           <a
             href="/painel/usuarios"
