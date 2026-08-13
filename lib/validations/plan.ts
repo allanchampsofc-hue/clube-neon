@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { reaisToCents } from "@/lib/money";
+
+export { reaisToCents };
 
 export const planFormSchema = z.object({
   name: z.string().trim().min(1, "Informe o nome do plano."),
@@ -20,8 +23,3 @@ export const planFormSchema = z.object({
 });
 
 export type PlanFormValues = z.infer<typeof planFormSchema>;
-
-/** Converte reais (ex: 49.9) pra centavos (ex: 4990), arredondando pra evitar erro de ponto flutuante. */
-export function reaisToCents(reais: number) {
-  return Math.round(reais * 100);
-}
