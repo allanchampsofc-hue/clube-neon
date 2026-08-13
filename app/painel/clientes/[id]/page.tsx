@@ -72,6 +72,19 @@ export default async function ClienteDetalhePage({
     ["PENDENTE", "ATIVA", "INADIMPLENTE", "SUSPENSA"].includes(s.status),
   );
 
+  const activeSubscription = subscriptions.find((s) => s.status === "ATIVA");
+  let isInGracePeriod = false;
+  if (activeSubscription) {
+    const { data: latestCycle } = await supabase
+      .from("subscription_cycles")
+      .select("is_grace_period")
+      .eq("subscription_id", activeSubscription.id)
+      .order("cycle_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    isInGracePeriod = latestCycle?.is_grace_period ?? false;
+  }
+
   const { data: wallet } = await supabase
     .from("credit_wallets")
     .select("id, balance_cents")
@@ -191,8 +204,19 @@ export default async function ClienteDetalhePage({
                   {SUBSCRIPTION_STATUS_LABELS[
                     subscription.status as SubscriptionStatus
                   ] ?? subscription.status}
+                  {subscription.status === "ATIVA" && isInGracePeriod ? (
+                    <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-xs font-medium text-accent-foreground">
+                      Em carência
+                    </span>
+                  ) : null}
                 </span>
               </div>
+              {subscription.status === "ATIVA" && isInGracePeriod ? (
+                <p className="text-muted-foreground">
+                  Contrato concluído — saldo remanescente disponível até o
+                  fim do período de carência.
+                </p>
+              ) : null}
               {subscription.current_period_end ? (
                 <p className="text-muted-foreground">
                   Ciclo atual até{" "}
