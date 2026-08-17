@@ -27,3 +27,10 @@ export function formatCpf(value: string): string {
   if (digits.length !== 11) return value;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
 }
+
+/** CPF com os 6 dígitos do meio mascarados, pra exibição em resumos. */
+export function maskCpf(value: string): string {
+  const digits = onlyDigits(value);
+  if (digits.length !== 11) return value;
+  return `${digits.slice(0, 3)}.***.***-${digits.slice(9, 11)}`;
+}

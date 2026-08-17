@@ -1,7 +1,8 @@
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { formatCpf } from "@/lib/cpf";
+import { formatCpf, maskCpf } from "@/lib/cpf";
 import { formatCents } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 import { SUBSCRIPTION_STATUS_LABELS, type SubscriptionStatus } from "@/lib/subscriptions";
 import {
   CREDIT_TRANSACTION_TYPE_LABELS,
@@ -20,6 +21,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { updateCustomer } from "../actions";
 import { adjustCredit } from "../credit-actions";
+import { AdvancedCreditDialog } from "./advanced-credit-dialog";
 import {
   activateSubscription,
   cancelSubscription,
@@ -32,9 +34,10 @@ export default async function ClienteDetalhePage({
   params,
   searchParams,
 }: PageProps<"/painel/clientes/[id]">) {
-  await requireStaff();
+  const { roles } = await requireStaff();
+  const isAdmin = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
   const { id } = await params;
-  const { error, success } = await searchParams;
+  const { error, success, adv_error: advError, adv_success: advSuccess } = await searchParams;
 
   const supabase = await createClient();
   const { data: customer } = await supabase
@@ -113,7 +116,10 @@ export default async function ClienteDetalhePage({
       <Card className="max-w-md">
         <CardHeader>
           <CardTitle>{customer.name}</CardTitle>
-          <CardDescription>Membro {customer.member_number}</CardDescription>
+          <CardDescription>
+            Membro {customer.member_number} · CPF {maskCpf(customer.cpf)} ·
+            Membro desde {formatDate(customer.created_at)}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form
@@ -284,9 +290,23 @@ export default async function ClienteDetalhePage({
             </p>
           ) : (
             <>
-              <p className="text-2xl font-bold text-primary">
-                {formatCents(wallet.balance_cents)}
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-primary">
+                  {formatCents(wallet.balance_cents)}
+                </p>
+                {isAdmin ? (
+                  <AdvancedCreditDialog customerId={customer.id} />
+                ) : null}
+              </div>
+
+              {advError ? (
+                <p className="text-sm text-destructive">{advError}</p>
+              ) : null}
+              {advSuccess ? (
+                <p className="text-sm text-primary">
+                  Ajuste avançado registrado com sucesso.
+                </p>
+              ) : null}
 
               <form
                 action={adjustCredit.bind(null, customer.id)}

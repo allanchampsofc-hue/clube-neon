@@ -15,7 +15,7 @@ export async function confirmCreditUsage(customerId: string, formData: FormData)
 
   if (!walletId || !Number.isFinite(amountReais) || amountReais <= 0) {
     redirect(
-      `/painel/utilizacao/${customerId}?error=${encodeURIComponent("Valor inválido.")}`,
+      `/painel/utilizacao/nova/${customerId}?error=${encodeURIComponent("Valor inválido.")}`,
     );
   }
 
@@ -30,11 +30,11 @@ export async function confirmCreditUsage(customerId: string, formData: FormData)
 
   if (error) {
     redirect(
-      `/painel/utilizacao/${customerId}?error=${encodeURIComponent(error.message)}`,
+      `/painel/utilizacao/nova/${customerId}?error=${encodeURIComponent(error.message)}`,
     );
   }
 
   redirect(
-    `/painel/utilizacao/${customerId}?success=1&amount=${encodeURIComponent(amountRaw)}`,
+    `/painel/utilizacao/nova/${customerId}?success=1&amount=${encodeURIComponent(amountRaw)}`,
   );
 }

@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { confirmCreditUsage } from "../actions";
+import { confirmCreditUsage } from "../../actions";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -21,7 +21,7 @@ function first(value: string | string[] | undefined) {
 export default async function UtilizacaoClientePage({
   params,
   searchParams,
-}: PageProps<"/painel/utilizacao/[customerId]">) {
+}: PageProps<"/painel/utilizacao/nova/[customerId]">) {
   await requireStaff();
   const { customerId } = await params;
   const sp = await searchParams;
@@ -61,7 +61,7 @@ export default async function UtilizacaoClientePage({
 
   const backLink = (
     <a
-      href="/painel/utilizacao"
+      href="/painel/utilizacao/nova"
       className="text-sm text-primary underline-offset-4 hover:underline"
     >
       ← Buscar outro cliente
@@ -89,7 +89,7 @@ export default async function UtilizacaoClientePage({
               </span>
             </p>
             <a
-              href="/painel/utilizacao"
+              href="/painel/utilizacao/nova"
               className={buttonVariants({ className: "self-start" })}
             >
               Atender outro cliente
@@ -162,7 +162,7 @@ export default async function UtilizacaoClientePage({
                   <input type="hidden" name="note" value={noteParam} />
                   <Button type="submit">Confirmar</Button>
                   <a
-                    href={`/painel/utilizacao/${customer.id}`}
+                    href={`/painel/utilizacao/nova/${customer.id}`}
                     className={buttonVariants({ variant: "outline" })}
                   >
                     Cancelar
@@ -172,7 +172,7 @@ export default async function UtilizacaoClientePage({
             )}
             {invalid ? (
               <a
-                href={`/painel/utilizacao/${customer.id}`}
+                href={`/painel/utilizacao/nova/${customer.id}`}
                 className={buttonVariants({ variant: "outline", className: "self-start" })}
               >
                 Voltar
