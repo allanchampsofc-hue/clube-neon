@@ -1,15 +1,9 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
 import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCents } from "@/lib/money";
 import { formatDate } from "@/lib/dates";
-
-function csvEscape(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
-}
+import { buildCsv, csvEscape, csvResponse } from "@/lib/csv";
 
 export async function GET(request: NextRequest) {
   await requireStaff();
@@ -42,28 +36,17 @@ export async function GET(request: NextRequest) {
     customer: { name: string; member_number: string } | null;
   }>;
 
-  const header = ["Data", "Cliente", "Membro", "Valor debitado", "Operador", "Observação"];
-  const lines = [header.join(",")];
+  const csv = buildCsv(
+    ["Data", "Cliente", "Membro", "Valor debitado", "Operador", "Observação"],
+    rows.map((row) => [
+      formatDate(row.created_at),
+      csvEscape(row.customer?.name ?? ""),
+      row.customer?.member_number ?? "",
+      formatCents(row.amount_cents),
+      row.operator_id ? "Atendimento Neon" : "Automático",
+      csvEscape(row.reason ?? ""),
+    ]),
+  );
 
-  for (const row of rows) {
-    lines.push(
-      [
-        formatDate(row.created_at),
-        csvEscape(row.customer?.name ?? ""),
-        row.customer?.member_number ?? "",
-        formatCents(row.amount_cents),
-        row.operator_id ? "Atendimento Neon" : "Automático",
-        csvEscape(row.reason ?? ""),
-      ].join(","),
-    );
-  }
-
-  const csv = "﻿" + lines.join("\n");
-
-  return new NextResponse(csv, {
-    headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="utilizacoes.csv"`,
-    },
-  });
+  return csvResponse(csv, "utilizacoes.csv");
 }

@@ -6,6 +6,8 @@ export default async function PainelLayout({
   children,
 }: LayoutProps<"/painel">) {
   const { user, role, roles } = await requireStaff();
+  const isManager =
+    roles.includes("GERENTE") || roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
   const isAdmin = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
   const isSuperAdmin = roles.includes("SUPER_ADMIN");
 
@@ -43,6 +45,14 @@ export default async function PainelLayout({
         >
           Utilização
         </a>
+        {isManager ? (
+          <a
+            href="/painel/relatorios"
+            className="hover:text-primary hover:underline"
+          >
+            Relatórios
+          </a>
+        ) : null}
         {isAdmin ? (
           <a
             href="/painel/usuarios"

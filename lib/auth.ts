@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 export type RoleCode = "SUPER_ADMIN" | "ADMIN" | "GERENTE" | "OPERADOR" | "CLIENTE";
 
 export const STAFF_ROLES: RoleCode[] = ["OPERADOR", "GERENTE", "ADMIN", "SUPER_ADMIN"];
+const MANAGER_ROLES: RoleCode[] = ["GERENTE", "ADMIN", "SUPER_ADMIN"];
 const ADMIN_ROLES: RoleCode[] = ["ADMIN", "SUPER_ADMIN"];
 
 export async function getCurrentUser() {
@@ -45,6 +46,10 @@ export async function requireRole(allowedRoles: RoleCode[]) {
 
 export async function requireStaff() {
   return requireRole(STAFF_ROLES);
+}
+
+export async function requireManager() {
+  return requireRole(MANAGER_ROLES);
 }
 
 export async function requireAdmin() {
