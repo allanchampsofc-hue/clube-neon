@@ -2,6 +2,7 @@ import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCpf } from "@/lib/cpf";
 import { formatCents, reaisToCents } from "@/lib/money";
+import { validateDebit } from "@/lib/credit-rules";
 import {
   Card,
   CardContent,
@@ -116,10 +117,8 @@ export default async function UtilizacaoClientePage({
   if (amountParam) {
     const amountReais = Number(amountParam);
     const amountCents = reaisToCents(amountReais);
-    const invalid =
-      !Number.isFinite(amountReais) ||
-      amountReais <= 0 ||
-      amountCents > wallet.balance_cents;
+    const validation = validateDebit(wallet.balance_cents, amountCents);
+    const invalid = !validation.valid;
 
     return (
       <div className="flex flex-col gap-4">
@@ -132,11 +131,12 @@ export default async function UtilizacaoClientePage({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            {invalid ? (
+            {!validation.valid ? (
               <p className="text-sm text-destructive">
-                {amountCents > wallet.balance_cents
-                  ? `Saldo insuficiente. Saldo atual: ${formatCents(wallet.balance_cents)}.`
-                  : "Valor inválido."}
+                {validation.reason}
+                {validation.reason === "Saldo insuficiente."
+                  ? ` Saldo atual: ${formatCents(wallet.balance_cents)}.`
+                  : ""}
               </p>
             ) : (
               <>

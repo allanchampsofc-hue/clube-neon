@@ -58,9 +58,11 @@ export async function checkout(formData: FormData) {
   });
 
   if (signUpError || !signUpData.user) {
-    redirect(
-      `/?checkout_error=${encodeURIComponent(signUpError?.message ?? "Não foi possível criar sua conta.")}#checkout`,
-    );
+    const message =
+      signUpError?.code === "user_already_exists"
+        ? "Esse e-mail já está cadastrado. Faça login."
+        : (signUpError?.message ?? "Não foi possível criar sua conta.");
+    redirect(`/?checkout_error=${encodeURIComponent(message)}#checkout`);
   }
 
   const { data: customer, error: customerError } = await supabase
