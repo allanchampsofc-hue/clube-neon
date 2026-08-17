@@ -8,3 +8,8 @@ export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
   return new Date(date).toLocaleDateString("pt-BR");
 }
+
+export function formatDateTime(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  return new Date(date).toLocaleString("pt-BR");
+}

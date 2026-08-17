@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth";
+import { getRequestIp } from "@/lib/request-ip";
 
 export async function createSubscription(customerId: string) {
   await requireStaff();
@@ -39,15 +40,26 @@ export async function createSubscription(customerId: string) {
     );
   }
 
-  const { error } = await supabase
+  const { data: subscription, error } = await supabase
     .from("subscriptions")
-    .insert({ customer_id: customerId, plan_id: plan.id });
+    .insert({ customer_id: customerId, plan_id: plan.id })
+    .select("id")
+    .single();
 
   if (error) {
     redirect(
       `/painel/clientes/${customerId}?error=${encodeURIComponent(error.message)}`,
     );
   }
+
+  const ip = await getRequestIp();
+  await supabase.rpc("log_audit_event", {
+    p_action: "SUBSCRIPTION_CREATED",
+    p_entity: "subscription",
+    p_entity_id: subscription.id,
+    p_after_state: { status: "PENDENTE", plan_id: plan.id, customer_id: customerId },
+    p_ip_address: ip,
+  });
 
   redirect(`/painel/clientes/${customerId}?success=1`);
 }
@@ -78,6 +90,12 @@ async function setSubscriptionStatus(
   await requireStaff();
   const supabase = await createClient();
 
+  const { data: before } = await supabase
+    .from("subscriptions")
+    .select("status")
+    .eq("id", subscriptionId)
+    .maybeSingle();
+
   const patch: Record<string, unknown> = { status };
   if (status === "CANCELADA") {
     patch.cancel_at = new Date().toISOString();
@@ -90,6 +108,18 @@ async function setSubscriptionStatus(
 
   if (error) {
     redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  if (status === "CANCELADA") {
+    const ip = await getRequestIp();
+    await supabase.rpc("log_audit_event", {
+      p_action: "SUBSCRIPTION_CANCELLED",
+      p_entity: "subscription",
+      p_entity_id: subscriptionId,
+      p_before_state: before,
+      p_after_state: { status, cancel_at: patch.cancel_at },
+      p_ip_address: ip,
+    });
   }
 
   redirect(`${redirectTo}?success=1`);

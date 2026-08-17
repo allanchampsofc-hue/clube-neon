@@ -81,6 +81,13 @@ export async function checkout(formData: FormData) {
     );
   }
 
+  await supabase.rpc("log_audit_event", {
+    p_action: "CUSTOMER_CREATED",
+    p_entity: "customer",
+    p_entity_id: customer.id,
+    p_after_state: { name, email, phone, cpf },
+  });
+
   const { data: plan } = await supabase
     .from("plans")
     .select("id")
@@ -95,13 +102,22 @@ export async function checkout(formData: FormData) {
     );
   }
 
-  const { error: subscriptionError } = await supabase
+  const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .insert({ customer_id: customer.id, plan_id: plan.id });
+    .insert({ customer_id: customer.id, plan_id: plan.id })
+    .select("id")
+    .single();
 
   if (subscriptionError) {
     redirect(`/?checkout_error=${encodeURIComponent(subscriptionError.message)}#checkout`);
   }
+
+  await supabase.rpc("log_audit_event", {
+    p_action: "SUBSCRIPTION_CREATED",
+    p_entity: "subscription",
+    p_entity_id: subscription.id,
+    p_after_state: { status: "PENDENTE", plan_id: plan.id },
+  });
 
   // Se o projeto Supabase exige confirmação de e-mail, signUp não retorna
   // sessão — não dá pra logar automaticamente ainda, então manda confirmar.
@@ -110,6 +126,8 @@ export async function checkout(formData: FormData) {
       `/?checkout_error=${encodeURIComponent("Conta criada! Confirme seu e-mail e depois faça login.")}#checkout`,
     );
   }
+
+  await supabase.rpc("log_auth_event", { p_action: "CHECKOUT" });
 
   redirect("/minha-conta?pending=1");
 }

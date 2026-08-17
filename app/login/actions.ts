@@ -20,7 +20,13 @@ export async function signIn(formData: FormData) {
   }
 
   const roles = await getUserRoleCodes(data.user.id);
-  if (roles.some((role) => STAFF_ROLES.includes(role))) {
+  const isStaff = roles.some((role) => STAFF_ROLES.includes(role));
+
+  await supabase.rpc("log_auth_event", {
+    p_action: isStaff ? "ADMIN_LOGIN" : "LOGIN",
+  });
+
+  if (isStaff) {
     redirect("/painel");
   }
 

@@ -61,6 +61,14 @@ export default async function PainelLayout({
             Usuários
           </a>
         ) : null}
+        {isAdmin ? (
+          <a
+            href="/painel/auditoria"
+            className="hover:text-primary hover:underline"
+          >
+            Auditoria
+          </a>
+        ) : null}
         {isSuperAdmin ? (
           <a
             href="/painel/sistema"
