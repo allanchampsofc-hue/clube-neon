@@ -33,7 +33,7 @@ export async function signIn(formData: FormData) {
     .maybeSingle();
 
   if (customer) {
-    redirect("/conta");
+    redirect("/minha-conta");
   }
 
   redirect("/nao-autorizado");

@@ -60,11 +60,19 @@ export async function requireSuperAdmin() {
  * vinculado (perfil CLIENTE). A checagem é pelo registro em `customers`, não
  * pela role — a role CLIENTE é apenas espelho dela (ver trigger
  * assign_cliente_role em supabase/migrations/00001_initial_schema.sql).
+ *
+ * Staff (OPERADOR+) que cair em /minha-conta é redirecionado pro /painel em
+ * vez de /nao-autorizado — é a área deles, não um acesso negado de verdade.
  */
 export async function requireCustomer() {
   const user = await getCurrentUser();
   if (!user) {
     redirect("/login");
+  }
+
+  const roles = await getUserRoleCodes(user.id);
+  if (roles.some((role) => STAFF_ROLES.includes(role))) {
+    redirect("/painel");
   }
 
   const supabase = await createClient();

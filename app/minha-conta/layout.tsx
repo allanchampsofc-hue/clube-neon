@@ -2,9 +2,18 @@ import { requireCustomer } from "@/lib/auth";
 import { signOut } from "@/lib/auth-actions";
 import { Button } from "@/components/ui/button";
 
-export default async function ContaLayout({
+const NAV_ITEMS = [
+  { href: "/minha-conta", label: "Início" },
+  { href: "/minha-conta/credito", label: "Meu Crédito" },
+  { href: "/minha-conta/historico", label: "Histórico" },
+  { href: "/minha-conta/perfil", label: "Meu Perfil" },
+  { href: "/minha-conta/pagamentos", label: "Pagamentos" },
+  { href: "/minha-conta/ajuda", label: "Ajuda" },
+];
+
+export default async function MinhaContaLayout({
   children,
-}: LayoutProps<"/conta">) {
+}: LayoutProps<"/minha-conta">) {
   const { customer } = await requireCustomer();
 
   return (
@@ -22,6 +31,17 @@ export default async function ContaLayout({
           </Button>
         </form>
       </header>
+      <nav className="flex flex-wrap gap-4 border-b border-border bg-card px-6 py-2 text-sm">
+        {NAV_ITEMS.map((item) => (
+          <a
+            key={item.href}
+            href={item.href}
+            className="hover:text-primary hover:underline"
+          >
+            {item.label}
+          </a>
+        ))}
+      </nav>
       <main className="flex-1 p-6">{children}</main>
     </div>
   );
