@@ -2,9 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getUserRoleCodes, type RoleCode } from "@/lib/auth";
-
-const STAFF_ROLES: RoleCode[] = ["OPERADOR", "GERENTE", "ADMIN", "SUPER_ADMIN"];
+import { getUserRoleCodes, STAFF_ROLES } from "@/lib/auth";
 
 export async function signIn(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();

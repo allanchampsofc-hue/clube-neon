@@ -40,8 +40,11 @@ type CycleRow = {
   is_grace_period: boolean;
 };
 
-export default async function MinhaContaPage() {
+export default async function MinhaContaPage({
+  searchParams,
+}: PageProps<"/minha-conta">) {
   const { customer } = await requireCustomer();
+  const { pending } = await searchParams;
   const supabase = await createClient();
 
   const { data: subscriptionData } = await supabase
@@ -107,6 +110,15 @@ export default async function MinhaContaPage() {
 
   return (
     <div className="flex flex-col gap-6">
+      {pending ? (
+        <Card className="max-w-md border-secondary bg-secondary/10">
+          <CardContent className="pt-6 text-sm text-primary">
+            Sua assinatura está sendo processada. Em breve você receberá a
+            confirmação.
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div>
         <h1 className="font-heading text-2xl font-bold text-primary">
           Olá, {customer.name}! 👋

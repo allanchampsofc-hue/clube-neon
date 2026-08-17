@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type RoleCode = "SUPER_ADMIN" | "ADMIN" | "GERENTE" | "OPERADOR" | "CLIENTE";
 
-const STAFF_ROLES: RoleCode[] = ["OPERADOR", "GERENTE", "ADMIN", "SUPER_ADMIN"];
+export const STAFF_ROLES: RoleCode[] = ["OPERADOR", "GERENTE", "ADMIN", "SUPER_ADMIN"];
 const ADMIN_ROLES: RoleCode[] = ["ADMIN", "SUPER_ADMIN"];
 
 export async function getCurrentUser() {
