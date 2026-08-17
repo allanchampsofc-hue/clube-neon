@@ -141,7 +141,8 @@ export default async function ClienteDetalhePage({
               <Input
                 id="cpf"
                 name="cpf"
-                defaultValue={formatCpf(customer.cpf)}
+                defaultValue={customer.cpf ? formatCpf(customer.cpf) : ""}
+                placeholder="000.000.000-00"
                 required
               />
             </div>

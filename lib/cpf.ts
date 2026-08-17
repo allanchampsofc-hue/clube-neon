@@ -1,4 +1,5 @@
-export function onlyDigits(value: string): string {
+export function onlyDigits(value: string | null | undefined): string {
+  if (!value) return "";
   return value.replace(/\D/g, "");
 }
 
@@ -11,7 +12,7 @@ function calcCheckDigit(cpf: string, length: number): number {
   return remainder === 10 ? 0 : remainder;
 }
 
-export function isValidCpf(value: string): boolean {
+export function isValidCpf(value: string | null | undefined): boolean {
   const cpf = onlyDigits(value);
   if (cpf.length !== 11) return false;
   if (/^(\d)\1{10}$/.test(cpf)) return false;
@@ -22,14 +23,16 @@ export function isValidCpf(value: string): boolean {
   return digit1 === parseInt(cpf[9], 10) && digit2 === parseInt(cpf[10], 10);
 }
 
-export function formatCpf(value: string): string {
+export function formatCpf(value: string | null | undefined): string {
+  if (!value) return "Não informado";
   const digits = onlyDigits(value);
   if (digits.length !== 11) return value;
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
 }
 
 /** CPF com os 6 dígitos do meio mascarados, pra exibição em resumos. */
-export function maskCpf(value: string): string {
+export function maskCpf(value: string | null | undefined): string {
+  if (!value) return "Não informado";
   const digits = onlyDigits(value);
   if (digits.length !== 11) return value;
   return `${digits.slice(0, 3)}.***.***-${digits.slice(9, 11)}`;
