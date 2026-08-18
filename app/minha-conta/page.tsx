@@ -86,6 +86,14 @@ export default async function MinhaContaPage({
     .limit(10);
   const ledger = ledgerData ?? [];
 
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const { data: draw } = await supabase
+    .from("monthly_draws")
+    .select("prize_description")
+    .eq("month", currentMonth)
+    .eq("winner_customer_id", customer.id)
+    .maybeSingle();
+
   const plan = subscription?.plan ?? null;
   const inGracePeriod = cycle?.is_grace_period ?? false;
   const isActive = subscription?.status === "ATIVA";
@@ -115,6 +123,15 @@ export default async function MinhaContaPage({
           <CardContent className="pt-6 text-sm text-primary">
             Sua assinatura está sendo processada. Em breve você receberá a
             confirmação.
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {draw ? (
+        <Card className="max-w-md border-secondary bg-secondary/10">
+          <CardContent className="pt-6 text-sm text-primary">
+            🎉 Parabéns! Você foi sorteado este mês! Seu prêmio:{" "}
+            {draw.prize_description}. Entre em contato com a Neon.
           </CardContent>
         </Card>
       ) : null}
