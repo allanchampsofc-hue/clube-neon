@@ -1,5 +1,7 @@
 import { CheckIcon, ClipboardCheckIcon, PizzaIcon, ZapIcon } from "lucide-react";
 import { getCurrentUser, getUserRoleCodes, STAFF_ROLES } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { formatCents } from "@/lib/money";
 import {
   Card,
   CardContent,
@@ -85,6 +87,23 @@ export default async function LandingPage({
 }: PageProps<"/">) {
   const sp = await searchParams;
   const checkoutError = first(sp.checkout_error);
+  const refCode = first(sp.ref)?.trim().toUpperCase() || null;
+
+  const supabase = await createClient();
+  const { data: config } = await supabase
+    .from("system_config")
+    .select("referral_credit_cents")
+    .limit(1)
+    .maybeSingle();
+  const referralCreditCents = config?.referral_credit_cents ?? 3000;
+
+  let validReferral = false;
+  if (refCode) {
+    const { data: referrerId } = await supabase.rpc("lookup_referrer_by_code", {
+      p_code: refCode,
+    });
+    validReferral = Boolean(referrerId);
+  }
 
   const user = await getCurrentUser();
   let loggedInHref: string | null = null;
@@ -288,6 +307,15 @@ export default async function LandingPage({
                   <form action={checkout} className="flex flex-col gap-3">
                     {checkoutError ? (
                       <p className="text-sm text-destructive">{checkoutError}</p>
+                    ) : null}
+
+                    {validReferral ? (
+                      <div className="rounded-md border border-secondary/40 bg-secondary/10 p-3 text-sm text-primary-foreground">
+                        Você foi indicado por um amigo Neon! Ao ativar sua
+                        assinatura, ambos ganham {formatCents(referralCreditCents)}{" "}
+                        de crédito.
+                        <input type="hidden" name="ref" value={refCode ?? ""} />
+                      </div>
                     ) : null}
 
                     <div className="flex flex-col gap-1.5">

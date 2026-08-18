@@ -45,6 +45,12 @@ export default async function PainelLayout({
         >
           Utilização
         </a>
+        <a
+          href="/painel/indicacoes"
+          className="hover:text-primary hover:underline"
+        >
+          Indicações
+        </a>
         {isManager ? (
           <a
             href="/painel/relatorios"

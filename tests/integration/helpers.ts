@@ -100,9 +100,33 @@ export async function createActiveSubscriptionWithCredit(customerId: string) {
   return { subscriptionId: subscription.id as string, walletId: wallet.id as string, balanceCents: wallet.balance_cents as number };
 }
 
+/** Cria a subscription PENDENTE sem ativar — pra testar o efeito de activate_subscription isoladamente. */
+export async function createPendingSubscription(customerId: string) {
+  const admin = createAdminClient();
+
+  const { data: plan } = await admin
+    .from("plans")
+    .select("id")
+    .eq("active", true)
+    .limit(1)
+    .maybeSingle();
+  if (!plan) throw new Error("Nenhum plano ativo — rode as seeds antes dos testes.");
+
+  const { data: subscription, error } = await admin
+    .from("subscriptions")
+    .insert({ customer_id: customerId, plan_id: plan.id })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+
+  return subscription.id as string;
+}
+
 /** Ordem importa: FKs "restrict" em customer_id exigem apagar o ledger antes. */
 export async function cleanupTestCustomer(customerId: string) {
   const admin = createAdminClient();
+  await admin.from("referrals").delete().eq("referrer_customer_id", customerId);
+  await admin.from("referrals").delete().eq("referred_customer_id", customerId);
   await admin.from("credit_transactions").delete().eq("customer_id", customerId);
   await admin.from("subscriptions").delete().eq("customer_id", customerId);
   await admin.from("customers").delete().eq("id", customerId);

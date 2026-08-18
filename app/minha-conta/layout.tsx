@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { href: "/minha-conta", label: "Início" },
   { href: "/minha-conta/credito", label: "Meu Crédito" },
   { href: "/minha-conta/historico", label: "Histórico" },
+  { href: "/minha-conta/indicacoes", label: "Indique um amigo" },
   { href: "/minha-conta/perfil", label: "Meu Perfil" },
   { href: "/minha-conta/pagamentos", label: "Pagamentos" },
   { href: "/minha-conta/ajuda", label: "Ajuda" },

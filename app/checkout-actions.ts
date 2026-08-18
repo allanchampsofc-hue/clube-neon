@@ -37,6 +37,7 @@ export async function checkout(formData: FormData) {
   }
 
   const { name, email, phone, cpf, password } = parsed.data;
+  const refCode = String(formData.get("ref") ?? "").trim() || null;
   const supabase = await createClient();
 
   const { data: existingCustomer } = await supabase
@@ -89,6 +90,19 @@ export async function checkout(formData: FormData) {
     p_entity_id: customer.id,
     p_after_state: { name, email, phone, cpf },
   });
+
+  if (refCode) {
+    const { data: referrerId } = await supabase.rpc("lookup_referrer_by_code", {
+      p_code: refCode,
+    });
+    if (referrerId) {
+      await supabase.from("referrals").insert({
+        referrer_customer_id: referrerId,
+        referred_customer_id: customer.id,
+        referral_code: refCode,
+      });
+    }
+  }
 
   const { data: plan } = await supabase
     .from("plans")

@@ -17,6 +17,7 @@ type DashboardMetrics = {
   receita_recorrente_cents: number;
   credito_liberado_mes_cents: number;
   credito_utilizado_mes_cents: number;
+  indicacoes_mes: number;
 };
 
 function StatCard({
@@ -106,6 +107,10 @@ export default async function PainelPage() {
             title="Taxa de utilização"
             value={`${taxaUtilizacao}%`}
             description="Utilizado ÷ liberado"
+          />
+          <StatCard
+            title="Indicações no mês"
+            value={String(metrics.indicacoes_mes)}
           />
         </div>
       )}
