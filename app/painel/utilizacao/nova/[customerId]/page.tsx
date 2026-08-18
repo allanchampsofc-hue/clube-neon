@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { confirmCreditUsage } from "../../actions";
+import { CashbackUsageFields } from "@/components/cashback-usage-fields";
+import { calculateCashback } from "@/lib/cashback-rules";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -28,8 +30,10 @@ export default async function UtilizacaoClientePage({
   const sp = await searchParams;
   const amountParam = first(sp.amount);
   const noteParam = first(sp.note) ?? "";
+  const orderTotalParam = first(sp.order_total) ?? "";
   const errorParam = first(sp.error);
   const successParam = first(sp.success);
+  const cashbackParam = first(sp.cashback);
 
   const supabase = await createClient();
   const { data: customer } = await supabase
@@ -60,6 +64,23 @@ export default async function UtilizacaoClientePage({
   const planName = (subscription as { plan: { name: string } | null } | null)
     ?.plan?.name;
 
+  const { data: config } = await supabase
+    .from("system_config")
+    .select("cashback_enabled, cashback_percentage, cashback_max_cents")
+    .limit(1)
+    .maybeSingle();
+  const cashbackEnabled = config?.cashback_enabled ?? true;
+  const cashbackPercentage = config?.cashback_percentage ?? 5;
+  const cashbackMaxCents = config?.cashback_max_cents ?? 1500;
+
+  const { data: pendingReferral } = await supabase
+    .from("referrals")
+    .select("id")
+    .or(`referrer_customer_id.eq.${customerId},referred_customer_id.eq.${customerId}`)
+    .eq("status", "PENDENTE")
+    .maybeSingle();
+  const hasPendingReferral = Boolean(pendingReferral);
+
   const backLink = (
     <a
       href="/painel/utilizacao/nova"
@@ -89,6 +110,12 @@ export default async function UtilizacaoClientePage({
                 {formatCents(wallet?.balance_cents ?? 0)}
               </span>
             </p>
+            {cashbackParam && Number(cashbackParam) > 0 ? (
+              <p className="text-sm text-secondary-foreground">
+                💰 {formatCents(Number(cashbackParam))} de cashback gerado — cai no
+                próximo ciclo.
+              </p>
+            ) : null}
             <a
               href="/painel/utilizacao/nova"
               className={buttonVariants({ className: "self-start" })}
@@ -119,6 +146,16 @@ export default async function UtilizacaoClientePage({
     const amountCents = reaisToCents(amountReais);
     const validation = validateDebit(wallet.balance_cents, amountCents);
     const invalid = !validation.valid;
+
+    const orderTotalReais = Number(orderTotalParam);
+    const extraSpentCents =
+      orderTotalParam && Number.isFinite(orderTotalReais)
+        ? reaisToCents(orderTotalReais) - amountCents
+        : 0;
+    const cashbackPreviewCents =
+      cashbackEnabled && !hasPendingReferral
+        ? calculateCashback(extraSpentCents, cashbackPercentage, cashbackMaxCents)
+        : 0;
 
     return (
       <div className="flex flex-col gap-4">
@@ -152,6 +189,17 @@ export default async function UtilizacaoClientePage({
                   <br />
                   Saldo após: {formatCents(wallet.balance_cents - amountCents)}
                 </p>
+                {cashbackPreviewCents > 0 ? (
+                  <p className="text-sm text-secondary-foreground">
+                    💰 Cliente vai ganhar {formatCents(cashbackPreviewCents)} de
+                    cashback no próximo ciclo
+                  </p>
+                ) : hasPendingReferral && extraSpentCents > 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    ℹ️ Cashback não disponível: cliente tem benefício de indicação
+                    ativo.
+                  </p>
+                ) : null}
 
                 <form
                   action={confirmCreditUsage.bind(null, customer.id)}
@@ -160,6 +208,7 @@ export default async function UtilizacaoClientePage({
                   <input type="hidden" name="wallet_id" value={wallet.id} />
                   <input type="hidden" name="amount" value={amountParam} />
                   <input type="hidden" name="note" value={noteParam} />
+                  <input type="hidden" name="order_total" value={orderTotalParam} />
                   <Button type="submit">Confirmar</Button>
                   <a
                     href={`/painel/utilizacao/nova/${customer.id}`}
@@ -209,19 +258,13 @@ export default async function UtilizacaoClientePage({
           ) : null}
 
           <form className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="amount">Valor a debitar (R$)</Label>
-              <Input
-                id="amount"
-                name="amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                max={(wallet.balance_cents / 100).toFixed(2)}
-                required
-                autoFocus
-              />
-            </div>
+            <CashbackUsageFields
+              maxBalanceReais={(wallet.balance_cents / 100).toFixed(2)}
+              cashbackEnabled={cashbackEnabled}
+              cashbackPercentage={cashbackPercentage}
+              cashbackMaxCents={cashbackMaxCents}
+              hasPendingReferral={hasPendingReferral}
+            />
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="note">Observação (opcional)</Label>
               <Input id="note" name="note" placeholder="Ex: pedido #1234" />

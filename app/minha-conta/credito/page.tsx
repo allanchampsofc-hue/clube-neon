@@ -58,6 +58,18 @@ export default async function MeuCreditoPage() {
     );
   }
 
+  const { data: cashbackData } = await supabase
+    .from("cashback_transactions")
+    .select("cashback_cents, status, credited_at, created_at")
+    .eq("customer_id", customer.id)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const cashbackRows = cashbackData ?? [];
+  const pendingCashbackCents = cashbackRows
+    .filter((c) => c.status === "PENDENTE")
+    .reduce((sum, c) => sum + c.cashback_cents, 0);
+  const creditedCashback = cashbackRows.filter((c) => c.status === "CREDITADO");
+
   const totalCents = cycle?.is_grace_period ? 0 : subscription?.plan?.monthly_credit_cents ?? 0;
   const balanceCents = wallet.balance_cents;
   const usedCents = Math.max(0, totalCents - balanceCents);
@@ -99,6 +111,37 @@ export default async function MeuCreditoPage() {
           )}
         </CardContent>
       </Card>
+
+      {pendingCashbackCents > 0 ? (
+        <Card className="max-w-md border-secondary bg-secondary/10">
+          <CardContent className="pt-6 text-sm text-primary">
+            💰 Você tem {formatCents(pendingCashbackCents)} de cashback
+            aguardando o próximo ciclo.
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {creditedCashback.length > 0 ? (
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Cashback creditado</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="flex flex-col gap-1.5 text-sm">
+              {creditedCashback.map((c, i) => (
+                <li key={i} className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    {c.credited_at ? formatDate(c.credited_at) : "—"}
+                  </span>
+                  <span className="font-medium text-primary">
+                    +{formatCents(c.cashback_cents)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

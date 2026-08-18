@@ -12,7 +12,12 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { updatePlan, updateBirthdayConfig, updateMembershipMessages } from "./actions";
+import {
+  updatePlan,
+  updateBirthdayConfig,
+  updateMembershipMessages,
+  updateCashbackConfig,
+} from "./actions";
 
 function centsToReais(cents: number) {
   return (cents / 100).toFixed(2);
@@ -33,7 +38,9 @@ export default async function PainelSistemaPage({
     .maybeSingle();
   const { data: config } = await supabase
     .from("system_config")
-    .select("birthday_message, birthday_gift, membership_ouro_message, membership_black_message")
+    .select(
+      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled",
+    )
     .limit(1)
     .maybeSingle();
 
@@ -221,6 +228,57 @@ export default async function PainelSistemaPage({
                 defaultValue={config?.membership_black_message ?? ""}
                 required
               />
+            </div>
+            <Button type="submit" className="mt-2">
+              Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Cashback</CardTitle>
+          <CardDescription>
+            Aplicado sobre o valor pago fora do crédito quando o pedido excede
+            o saldo disponível. Não acumula com crédito de indicação
+            pendente.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateCashbackConfig} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="cashback_percentage">Percentual de cashback (%)</Label>
+              <Input
+                id="cashback_percentage"
+                name="cashback_percentage"
+                type="number"
+                step="1"
+                min="0"
+                max="100"
+                defaultValue={config?.cashback_percentage ?? 5}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="cashback_max_reais">Teto de cashback por ciclo (R$)</Label>
+              <Input
+                id="cashback_max_reais"
+                name="cashback_max_reais"
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={centsToReais(config?.cashback_max_cents ?? 1500)}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="cashback_enabled"
+                name="cashback_enabled"
+                defaultChecked={config?.cashback_enabled ?? true}
+              />
+              <Label htmlFor="cashback_enabled">Cashback ativado</Label>
             </div>
             <Button type="submit" className="mt-2">
               Salvar

@@ -96,6 +96,16 @@ export default async function MinhaContaPage({
     .eq("winner_customer_id", customer.id)
     .maybeSingle();
 
+  const { data: pendingCashbackData } = await supabase
+    .from("cashback_transactions")
+    .select("cashback_cents")
+    .eq("customer_id", customer.id)
+    .eq("status", "PENDENTE");
+  const pendingCashbackCents = (pendingCashbackData ?? []).reduce(
+    (sum, c) => sum + c.cashback_cents,
+    0,
+  );
+
   const { data: membershipData } = await supabase
     .from("customers")
     .select("membership_level")
@@ -168,6 +178,15 @@ export default async function MinhaContaPage({
           <CardContent className="pt-6 text-sm text-primary">
             🎉 Parabéns! Você foi sorteado este mês! Seu prêmio:{" "}
             {draw.prize_description}. Entre em contato com a Neon.
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {pendingCashbackCents > 0 ? (
+        <Card className="max-w-md border-secondary bg-secondary/10">
+          <CardContent className="pt-6 text-sm text-primary">
+            💰 Você tem {formatCents(pendingCashbackCents)} de cashback
+            aguardando o próximo ciclo.
           </CardContent>
         </Card>
       ) : null}

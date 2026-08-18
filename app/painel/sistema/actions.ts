@@ -101,3 +101,39 @@ export async function updateBirthdayConfig(formData: FormData) {
 
   redirect("/painel/sistema?success=1");
 }
+
+export async function updateCashbackConfig(formData: FormData) {
+  await requireSuperAdmin();
+
+  const percentage = Number(formData.get("cashback_percentage"));
+  const maxReais = Number(formData.get("cashback_max_reais"));
+  const enabled = formData.get("cashback_enabled") === "on";
+
+  if (
+    !Number.isFinite(percentage) ||
+    percentage < 0 ||
+    percentage > 100 ||
+    !Number.isFinite(maxReais) ||
+    maxReais < 0
+  ) {
+    redirect(`/painel/sistema?error=${encodeURIComponent("Valores de cashback inválidos.")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error } = await supabase
+    .from("system_config")
+    .update({
+      cashback_percentage: Math.round(percentage),
+      cashback_max_cents: reaisToCents(maxReais),
+      cashback_enabled: enabled,
+    })
+    .eq("id", config!.id);
+
+  if (error) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/painel/sistema?success=1");
+}

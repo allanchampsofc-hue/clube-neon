@@ -113,6 +113,16 @@ export default async function ClienteDetalhePage({
     .limit(1)
     .maybeSingle();
 
+  const { data: pendingCashbackData } = await supabase
+    .from("cashback_transactions")
+    .select("cashback_cents")
+    .eq("customer_id", customer.id)
+    .eq("status", "PENDENTE");
+  const pendingCashbackCents = (pendingCashbackData ?? []).reduce(
+    (sum, c) => sum + c.cashback_cents,
+    0,
+  );
+
   const { data: ledgerData } = await supabase
     .from("credit_transactions")
     .select("id, type, amount_cents, reason, created_at")
@@ -350,6 +360,13 @@ export default async function ClienteDetalhePage({
                   <AdvancedCreditDialog customerId={customer.id} />
                 ) : null}
               </div>
+
+              {pendingCashbackCents > 0 ? (
+                <p className="text-sm text-secondary-foreground">
+                  💰 Cashback pendente: {formatCents(pendingCashbackCents)} (cai no
+                  próximo ciclo)
+                </p>
+              ) : null}
 
               {advError ? (
                 <p className="text-sm text-destructive">{advError}</p>

@@ -156,6 +156,7 @@ export async function cleanupTestCustomer(customerId: string) {
   await admin.from("referrals").delete().eq("referred_customer_id", customerId);
   await admin.from("birthday_notifications").delete().eq("customer_id", customerId);
   await admin.from("membership_history").delete().eq("customer_id", customerId);
+  await admin.from("cashback_transactions").delete().eq("customer_id", customerId);
   await admin.from("credit_transactions").delete().eq("customer_id", customerId);
   await admin.from("subscriptions").delete().eq("customer_id", customerId);
   await admin.from("customers").delete().eq("id", customerId);
