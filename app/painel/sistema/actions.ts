@@ -45,6 +45,36 @@ export async function updatePlan(planId: string, formData: FormData) {
   redirect("/painel/sistema?success=1");
 }
 
+export async function updateMembershipMessages(formData: FormData) {
+  await requireSuperAdmin();
+
+  const ouroMessage = String(formData.get("membership_ouro_message") ?? "").trim();
+  const blackMessage = String(formData.get("membership_black_message") ?? "").trim();
+
+  if (!ouroMessage || !blackMessage) {
+    redirect(
+      `/painel/sistema?error=${encodeURIComponent("Preencha as duas mensagens de nível.")}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error: updateError } = await supabase
+    .from("system_config")
+    .update({
+      membership_ouro_message: ouroMessage,
+      membership_black_message: blackMessage,
+    })
+    .eq("id", config!.id);
+
+  if (updateError) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(updateError.message)}`);
+  }
+
+  redirect("/painel/sistema?success=1");
+}
+
 export async function updateBirthdayConfig(formData: FormData) {
   await requireSuperAdmin();
 

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { updateCustomer } from "../actions";
 import { adjustCredit } from "../credit-actions";
 import { AdvancedCreditDialog } from "./advanced-credit-dialog";
+import { MembershipBadge } from "@/components/membership-badge";
 import {
   activateSubscription,
   cancelSubscription,
@@ -88,6 +89,22 @@ export default async function ClienteDetalhePage({
     isInGracePeriod = latestCycle?.is_grace_period ?? false;
   }
 
+  let membershipMonths = 0;
+  if (activeSubscription) {
+    const { count } = await supabase
+      .from("subscription_cycles")
+      .select("id", { count: "exact", head: true })
+      .eq("subscription_id", activeSubscription.id);
+    membershipMonths = count ?? 0;
+  }
+
+  const { data: membershipHistoryData } = await supabase
+    .from("membership_history")
+    .select("level, started_at, ended_at")
+    .eq("customer_id", customer.id)
+    .order("started_at", { ascending: false });
+  const membershipHistory = membershipHistoryData ?? [];
+
   const { data: wallet } = await supabase
     .from("credit_wallets")
     .select("id, balance_cents")
@@ -115,7 +132,10 @@ export default async function ClienteDetalhePage({
     <div className="flex flex-col gap-6">
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>{customer.name}</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle>{customer.name}</CardTitle>
+            <MembershipBadge level={customer.membership_level ?? "MEMBRO"} />
+          </div>
           <CardDescription>
             Membro {customer.member_number} · CPF {maskCpf(customer.cpf)} ·
             Membro desde {formatDate(customer.created_at)}
@@ -273,6 +293,37 @@ export default async function ClienteDetalhePage({
               </Button>
             </form>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <CardTitle>Nível</CardTitle>
+            <MembershipBadge level={customer.membership_level ?? "MEMBRO"} />
+          </div>
+          <CardDescription>
+            {activeSubscription
+              ? `${membershipMonths} ${membershipMonths === 1 ? "mês" : "meses"} consecutivo${membershipMonths === 1 ? "" : "s"} de assinatura ATIVA`
+              : "Sem assinatura ativa no momento"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {membershipHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Sem histórico ainda.</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5 text-sm">
+              {membershipHistory.map((h, i) => (
+                <li key={i}>
+                  <span className="font-medium">{h.level}</span>{" "}
+                  <span className="text-muted-foreground">
+                    de {formatDate(h.started_at)} até{" "}
+                    {h.ended_at ? formatDate(h.ended_at) : "hoje"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 

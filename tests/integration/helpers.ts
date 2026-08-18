@@ -126,12 +126,36 @@ export async function createPendingSubscription(customerId: string) {
   return subscription.id as string;
 }
 
+/** Insere ciclos consecutivos (encadeados sem gap) a partir do period_end informado — pra simular meses de assinatura ATIVA nos testes de membership. */
+export async function addConsecutiveCycles(
+  subscriptionId: string,
+  count: number,
+  startFromCycleNumber: number,
+  startPeriodEnd: Date,
+) {
+  const admin = createAdminClient();
+  let periodStart = startPeriodEnd;
+  for (let i = 0; i < count; i++) {
+    const periodEnd = new Date(periodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const { error } = await admin.from("subscription_cycles").insert({
+      subscription_id: subscriptionId,
+      cycle_number: startFromCycleNumber + i,
+      period_start: periodStart.toISOString(),
+      period_end: periodEnd.toISOString(),
+      is_grace_period: false,
+    });
+    if (error) throw new Error(error.message);
+    periodStart = periodEnd;
+  }
+}
+
 /** Ordem importa: FKs "restrict" em customer_id exigem apagar o ledger antes. */
 export async function cleanupTestCustomer(customerId: string) {
   const admin = createAdminClient();
   await admin.from("referrals").delete().eq("referrer_customer_id", customerId);
   await admin.from("referrals").delete().eq("referred_customer_id", customerId);
   await admin.from("birthday_notifications").delete().eq("customer_id", customerId);
+  await admin.from("membership_history").delete().eq("customer_id", customerId);
   await admin.from("credit_transactions").delete().eq("customer_id", customerId);
   await admin.from("subscriptions").delete().eq("customer_id", customerId);
   await admin.from("customers").delete().eq("id", customerId);

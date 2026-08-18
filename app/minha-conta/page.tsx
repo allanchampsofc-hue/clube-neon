@@ -18,6 +18,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { buttonVariants } from "@/components/ui/button";
+import { MembershipBadge } from "@/components/membership-badge";
+import { MEMBERSHIP_BENEFITS } from "@/lib/membership";
 
 type SubscriptionRow = {
   id: string;
@@ -94,6 +96,40 @@ export default async function MinhaContaPage({
     .eq("winner_customer_id", customer.id)
     .maybeSingle();
 
+  const { data: membershipData } = await supabase
+    .from("customers")
+    .select("membership_level")
+    .eq("id", customer.id)
+    .single();
+  const membershipLevel = membershipData?.membership_level ?? "MEMBRO";
+
+  let membershipMonths = 0;
+  if (subscription && subscription.status === "ATIVA") {
+    const { count } = await supabase
+      .from("subscription_cycles")
+      .select("id", { count: "exact", head: true })
+      .eq("subscription_id", subscription.id);
+    membershipMonths = count ?? 0;
+  }
+
+  const membershipNextTarget =
+    membershipLevel === "MEMBRO" ? 6 : membershipLevel === "OURO" ? 12 : null;
+  const membershipSegmentStart = membershipLevel === "OURO" ? 6 : 0;
+  const membershipPct =
+    membershipNextTarget !== null
+      ? Math.min(
+          100,
+          Math.max(
+            0,
+            Math.round(
+              ((membershipMonths - membershipSegmentStart) /
+                (membershipNextTarget - membershipSegmentStart)) *
+                100,
+            ),
+          ),
+        )
+      : 100;
+
   const plan = subscription?.plan ?? null;
   const inGracePeriod = cycle?.is_grace_period ?? false;
   const isActive = subscription?.status === "ATIVA";
@@ -137,9 +173,12 @@ export default async function MinhaContaPage({
       ) : null}
 
       <div>
-        <h1 className="font-heading text-2xl font-bold text-primary">
-          Olá, {customer.name}! 👋
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="font-heading text-2xl font-bold text-primary">
+            Olá, {customer.name}! 👋
+          </h1>
+          <MembershipBadge level={membershipLevel} />
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           Você faz parte do Clube Neon.
         </p>
@@ -225,6 +264,36 @@ export default async function MinhaContaPage({
             <p>
               <span className="text-muted-foreground">Ciclo atual: </span>
               {cycleLabel}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {subscription && subscription.status === "ATIVA" ? (
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Seu nível no Clube Neon</CardTitle>
+            <CardDescription>
+              Você é membro há {membershipMonths}{" "}
+              {membershipMonths === 1 ? "mês" : "meses"} consecutivo
+              {membershipMonths === 1 ? "" : "s"}.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            <Progress value={membershipPct} />
+            <p className="text-sm text-muted-foreground">
+              {membershipLevel === "BLACK"
+                ? "Você atingiu o nível máximo! 🎉"
+                : `Faltam ${(membershipNextTarget ?? 0) - membershipMonths} mês(es) para ${
+                    membershipLevel === "MEMBRO" ? "OURO" : "BLACK"
+                  }`}
+            </p>
+            <p className="text-sm">
+              <span className="text-muted-foreground">Seu benefício: </span>
+              {MEMBERSHIP_BENEFITS[membershipLevel]}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Descontos são aplicados pelo atendente na hora do pedido.
             </p>
           </CardContent>
         </Card>

@@ -4,9 +4,13 @@ import {
   hasTestEnv,
   testEmail,
   resetSession,
+  createTestAuthUser,
+  assignTestRole,
+  signInTestUser,
   createTestCustomer,
   createActiveSubscriptionWithCredit,
   cleanupTestCustomer,
+  cleanupTestAuthUser,
 } from "./helpers";
 
 const describeIfEnv = hasTestEnv() ? describe : describe.skip;
@@ -20,9 +24,19 @@ function todayAsBirthDate(): string {
 
 describeIfEnv("aniversário via WhatsApp (integração)", () => {
   const customerIds: string[] = [];
+  const PASSWORD = "SenhaOperador123";
+  let staffEmail: string;
+  let staffUserId: string;
+
+  beforeAll(async () => {
+    staffEmail = testEmail("staff-aniversariantes");
+    staffUserId = await createTestAuthUser(staffEmail, PASSWORD);
+    await assignTestRole(staffUserId, "OPERADOR");
+  });
 
   afterAll(async () => {
     for (const id of customerIds) await cleanupTestCustomer(id);
+    await cleanupTestAuthUser(staffUserId);
   });
 
   beforeEach(() => {
@@ -56,7 +70,12 @@ describeIfEnv("aniversário via WhatsApp (integração)", () => {
     const todaysIds = (todays ?? []).map((r: { customer_id: string }) => r.customer_id);
     expect(todaysIds).toContain(customerId);
 
-    const { data: thisMonth } = await admin.rpc("get_birthdays_this_month");
+    await signInTestUser(staffEmail, PASSWORD);
+    const supabaseAsStaff = await createClient();
+    const { data: thisMonth, error: thisMonthError } = await supabaseAsStaff.rpc(
+      "get_birthdays_this_month",
+    );
+    expect(thisMonthError).toBeNull();
     const monthIds = (thisMonth ?? []).map((r: { customer_id: string }) => r.customer_id);
     expect(monthIds).toContain(customerId);
   });

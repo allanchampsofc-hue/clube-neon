@@ -18,6 +18,8 @@ type DashboardMetrics = {
   credito_liberado_mes_cents: number;
   credito_utilizado_mes_cents: number;
   indicacoes_mes: number;
+  membros_ouro: number;
+  membros_black: number;
 };
 
 function StatCard({
@@ -112,6 +114,8 @@ export default async function PainelPage() {
             title="Indicações no mês"
             value={String(metrics.indicacoes_mes)}
           />
+          <StatCard title="Membros Ouro" value={String(metrics.membros_ouro)} />
+          <StatCard title="Membros Black" value={String(metrics.membros_black)} />
         </div>
       )}
     </div>

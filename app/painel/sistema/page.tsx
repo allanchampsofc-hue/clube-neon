@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { updatePlan, updateBirthdayConfig } from "./actions";
+import { updatePlan, updateBirthdayConfig, updateMembershipMessages } from "./actions";
 
 function centsToReais(cents: number) {
   return (cents / 100).toFixed(2);
@@ -33,7 +33,7 @@ export default async function PainelSistemaPage({
     .maybeSingle();
   const { data: config } = await supabase
     .from("system_config")
-    .select("birthday_message, birthday_gift")
+    .select("birthday_message, birthday_gift, membership_ouro_message, membership_black_message")
     .limit(1)
     .maybeSingle();
 
@@ -182,6 +182,43 @@ export default async function PainelSistemaPage({
                 id="birthday_gift"
                 name="birthday_gift"
                 defaultValue={config?.birthday_gift ?? ""}
+                required
+              />
+            </div>
+            <Button type="submit" className="mt-2">
+              Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Níveis de membership</CardTitle>
+          <CardDescription>
+            Enviadas por WhatsApp quando o cliente sobe de nível. Variável
+            disponível: {"{nome}"}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateMembershipMessages} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="membership_ouro_message">Mensagem OURO</Label>
+              <Textarea
+                id="membership_ouro_message"
+                name="membership_ouro_message"
+                rows={4}
+                defaultValue={config?.membership_ouro_message ?? ""}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="membership_black_message">Mensagem BLACK</Label>
+              <Textarea
+                id="membership_black_message"
+                name="membership_black_message"
+                rows={4}
+                defaultValue={config?.membership_black_message ?? ""}
                 required
               />
             </div>
