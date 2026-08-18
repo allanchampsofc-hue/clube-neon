@@ -106,6 +106,47 @@ describeIfEnv("segurança (integração)", () => {
     expect(error!.message).toContain("Acesso negado");
   });
 
+  it("admin não consegue se auto-promover a super_admin via insert em user_roles", async () => {
+    const email = testEmail("admin-escalada");
+    const userId = await createTestAuthUser(email, PASSWORD);
+    authUserIds.push(userId);
+    await assignTestRole(userId, "ADMIN");
+    await signInTestUser(email, PASSWORD);
+
+    const supabaseAsAdmin = await createClient();
+    const { error } = await supabaseAsAdmin
+      .from("user_roles")
+      .insert({ user_id: userId, role_code: "SUPER_ADMIN" });
+
+    expect(error).toBeTruthy();
+
+    const admin = createAdminClient();
+    const { data: roles } = await admin
+      .from("user_roles")
+      .select("role_code")
+      .eq("user_id", userId)
+      .eq("role_code", "SUPER_ADMIN");
+    expect(roles).toHaveLength(0);
+  });
+
+  it("cliente não consegue forjar audit_log com ação fora do allowlist de autoatendimento", async () => {
+    const email = testEmail("cliente-forja-log");
+    const userId = await createTestAuthUser(email, PASSWORD);
+    authUserIds.push(userId);
+    const customerId = await createTestCustomer({ userId, name: "Cliente Forja Log", email });
+    customerIds.push(customerId);
+    await signInTestUser(email, PASSWORD);
+
+    const supabaseAsCliente = await createClient();
+    const { error } = await supabaseAsCliente.rpc("log_audit_event", {
+      p_action: "SUBSCRIPTION_CANCELLED",
+      p_entity: "customer",
+      p_entity_id: customerId,
+    });
+
+    expect(error).toBeTruthy();
+  });
+
   it("usuário anônimo não insere direto em credit_transactions", async () => {
     const supabaseAnon = await createClient();
     const admin = createAdminClient();
