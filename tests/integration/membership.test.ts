@@ -37,7 +37,8 @@ describeIfEnv("níveis de membership (integração)", () => {
     customerIds.push(customerId);
     await createActiveSubscriptionWithCredit(customerId);
 
-    await admin.rpc("update_membership_levels");
+    const { error } = await admin.rpc("update_membership_levels");
+    expect(error).toBeNull();
 
     const { data: customer } = await admin
       .from("customers")
@@ -96,7 +97,8 @@ describeIfEnv("níveis de membership (integração)", () => {
       .eq("cycle_number", 1)
       .single();
     await addConsecutiveCycles(subscriptionId, 5, 2, new Date(firstCycle!.period_end));
-    await admin.rpc("update_membership_levels");
+    const { error: firstError } = await admin.rpc("update_membership_levels");
+    expect(firstError).toBeNull();
 
     const { data: beforeCancel } = await admin
       .from("customers")
@@ -106,7 +108,8 @@ describeIfEnv("níveis de membership (integração)", () => {
     expect(beforeCancel?.membership_level).toBe("OURO");
 
     await admin.from("subscriptions").update({ status: "CANCELADA" }).eq("id", subscriptionId);
-    await admin.rpc("update_membership_levels");
+    const { error: secondError } = await admin.rpc("update_membership_levels");
+    expect(secondError).toBeNull();
 
     const { data: afterCancel } = await admin
       .from("customers")
