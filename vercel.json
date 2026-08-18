@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/birthday-notifications",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/satisfaction-surveys",
+      "schedule": "0 13 * * *"
     }
   ]
 }

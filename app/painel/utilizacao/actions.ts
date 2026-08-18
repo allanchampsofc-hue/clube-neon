@@ -55,6 +55,14 @@ export async function confirmCreditUsage(customerId: string, formData: FormData)
     }
   }
 
+  // Falha ao criar a pesquisa nunca deve travar a utilização — best-effort.
+  await supabase
+    .rpc("create_survey_if_eligible", { p_credit_transaction_id: transaction!.id })
+    .then(
+      () => {},
+      () => {},
+    );
+
   redirect(
     `/painel/utilizacao/nova/${customerId}?success=1&amount=${encodeURIComponent(amountRaw)}&cashback=${cashbackCents}`,
   );

@@ -17,6 +17,7 @@ import {
   updateBirthdayConfig,
   updateMembershipMessages,
   updateCashbackConfig,
+  updateSurveyConfig,
 } from "./actions";
 
 function centsToReais(cents: number) {
@@ -39,7 +40,7 @@ export default async function PainelSistemaPage({
   const { data: config } = await supabase
     .from("system_config")
     .select(
-      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled",
+      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled",
     )
     .limit(1)
     .maybeSingle();
@@ -279,6 +280,42 @@ export default async function PainelSistemaPage({
                 defaultChecked={config?.cashback_enabled ?? true}
               />
               <Label htmlFor="cashback_enabled">Cashback ativado</Label>
+            </div>
+            <Button type="submit" className="mt-2">
+              Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Pesquisa de satisfação</CardTitle>
+          <CardDescription>
+            Enviada por WhatsApp ~30 minutos depois de cada utilização de
+            crédito, no máximo 1 por dia por cliente. Variável disponível:{" "}
+            {"{nome}"}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateSurveyConfig} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="survey_message">Mensagem da pesquisa</Label>
+              <Textarea
+                id="survey_message"
+                name="survey_message"
+                rows={7}
+                defaultValue={config?.survey_message ?? ""}
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="survey_enabled"
+                name="survey_enabled"
+                defaultChecked={config?.survey_enabled ?? true}
+              />
+              <Label htmlFor="survey_enabled">Pesquisa de satisfação ativada</Label>
             </div>
             <Button type="submit" className="mt-2">
               Salvar

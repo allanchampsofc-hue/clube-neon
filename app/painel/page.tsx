@@ -20,6 +20,7 @@ type DashboardMetrics = {
   indicacoes_mes: number;
   membros_ouro: number;
   membros_black: number;
+  satisfacao_media: number | null;
 };
 
 function StatCard({
@@ -116,6 +117,13 @@ export default async function PainelPage() {
           />
           <StatCard title="Membros Ouro" value={String(metrics.membros_ouro)} />
           <StatCard title="Membros Black" value={String(metrics.membros_black)} />
+          {metrics.satisfacao_media !== null ? (
+            <StatCard
+              title="Satisfação média"
+              value={`${metrics.satisfacao_media.toFixed(1)} ⭐`}
+              description="Últimos 30 dias"
+            />
+          ) : null}
         </div>
       )}
     </div>

@@ -5,12 +5,15 @@
  * um erro (normalmente: logar e seguir).
  */
 
-function formatPhoneE164(phone: string): string {
+export function formatPhoneE164(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   return digits.startsWith("55") ? digits : `55${digits}`;
 }
 
-export async function sendWhatsAppMessage(phone: string, message: string): Promise<void> {
+export async function sendWhatsAppMessage(
+  phone: string,
+  message: string,
+): Promise<{ messageId: string | null }> {
   const instanceId = process.env.ZAPI_INSTANCE_ID;
   const token = process.env.ZAPI_TOKEN;
   const clientToken = process.env.ZAPI_CLIENT_TOKEN;
@@ -38,4 +41,14 @@ export async function sendWhatsAppMessage(phone: string, message: string): Promi
     const body = await response.text().catch(() => "");
     throw new Error(`Falha ao enviar WhatsApp via Z-API (${response.status}): ${body}`);
   }
+
+  const body = await response.json().catch(() => ({}) as Record<string, unknown>);
+  const messageId =
+    typeof body.messageId === "string"
+      ? body.messageId
+      : typeof body.zaapId === "string"
+        ? body.zaapId
+        : null;
+
+  return { messageId };
 }

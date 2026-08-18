@@ -73,6 +73,14 @@ export default async function PainelLayout({
             Sorteios
           </a>
         ) : null}
+        {isManager ? (
+          <a
+            href="/painel/satisfacao"
+            className="hover:text-primary hover:underline"
+          >
+            Satisfação
+          </a>
+        ) : null}
         {isAdmin ? (
           <a
             href="/painel/usuarios"

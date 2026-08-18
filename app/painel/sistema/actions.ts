@@ -137,3 +137,28 @@ export async function updateCashbackConfig(formData: FormData) {
 
   redirect("/painel/sistema?success=1");
 }
+
+export async function updateSurveyConfig(formData: FormData) {
+  await requireSuperAdmin();
+
+  const surveyMessage = String(formData.get("survey_message") ?? "").trim();
+  const enabled = formData.get("survey_enabled") === "on";
+
+  if (!surveyMessage) {
+    redirect(`/painel/sistema?error=${encodeURIComponent("Informe a mensagem da pesquisa.")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error } = await supabase
+    .from("system_config")
+    .update({ survey_message: surveyMessage, survey_enabled: enabled })
+    .eq("id", config!.id);
+
+  if (error) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/painel/sistema?success=1");
+}

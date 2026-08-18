@@ -72,12 +72,12 @@ describeIfEnv("cashback (integração)", () => {
     });
     expect(error).toBeNull();
 
+    const cashback = cashbackData as { id: string | null; cashback_cents: number; status: string };
+
     if (expectedCashback <= 0) {
-      expect(cashbackData).toBeNull();
+      expect(cashback?.id).toBeFalsy();
       return;
     }
-
-    const cashback = cashbackData as { id: string; cashback_cents: number; status: string };
     expect(cashback.cashback_cents).toBe(expectedCashback);
     expect(cashback.status).toBe("PENDENTE");
   });
@@ -136,7 +136,7 @@ describeIfEnv("cashback (integração)", () => {
       p_extra_spent_cents: 6000,
     });
     expect(error).toBeNull();
-    expect(cashbackData).toBeNull();
+    expect((cashbackData as { id: string | null } | null)?.id).toBeFalsy();
   });
 
   it("não gera cashback com o toggle desativado, e não altera nada além disso", async () => {
@@ -164,7 +164,7 @@ describeIfEnv("cashback (integração)", () => {
         p_extra_spent_cents: 6000,
       });
       expect(error).toBeNull();
-      expect(cashbackData).toBeNull();
+      expect((cashbackData as { id: string | null } | null)?.id).toBeFalsy();
     } finally {
       await admin
         .from("system_config")
@@ -207,15 +207,33 @@ describeIfEnv("cashback (integração)", () => {
       { p_credit_transaction_id: usage.id, p_extra_spent_cents: 6000 },
     );
     expect(cashbackError).toBeNull();
-    const cashback = cashbackData as { id: string; cashback_cents: number } | null;
-    expect(cashback).not.toBeNull();
+    const cashback = cashbackData as { id: string | null; cashback_cents: number } | null;
+    expect(cashback?.id).toBeTruthy();
 
     // Força o ciclo atual a já ter terminado, pra rollover aceitar processar.
-    await admin
+    // period_end precisa ficar depois de period_start (constraint do banco)
+    // e antes de "agora" — calcular a partir do period_start real em vez de
+    // um deslocamento fixo a partir de Date.now(), que pode cair antes do
+    // period_start dependendo de quanto tempo os round-trips anteriores
+    // (ativação, utilização, cashback) já consumiram.
+    const { data: currentCycle } = await admin
       .from("subscription_cycles")
-      .update({ period_end: new Date(Date.now() - 1000).toISOString() })
+      .select("period_start")
       .eq("subscription_id", subscriptionId)
-      .eq("cycle_number", 1);
+      .eq("cycle_number", 1)
+      .single();
+    const newPeriodEnd = new Date(new Date(currentCycle!.period_start).getTime() + 1);
+    expect(newPeriodEnd.getTime()).toBeLessThan(Date.now());
+
+    const { data: updatedCycle, error: updateError } = await admin
+      .from("subscription_cycles")
+      .update({ period_end: newPeriodEnd.toISOString() })
+      .eq("subscription_id", subscriptionId)
+      .eq("cycle_number", 1)
+      .select("period_end")
+      .single();
+    expect(updateError).toBeNull();
+    expect(new Date(updatedCycle!.period_end).getTime()).toBeLessThan(Date.now());
 
     const { error: rolloverError } = await admin.rpc("process_subscription_cycle_rollover", {
       p_subscription_id: subscriptionId,
