@@ -50,6 +50,8 @@ export async function createTestCustomer(params: {
   name: string;
   email: string;
   cpf?: string;
+  phone?: string;
+  birthDate?: string;
 }) {
   const admin = createAdminClient();
   const { data, error } = await admin
@@ -59,6 +61,8 @@ export async function createTestCustomer(params: {
       name: params.name,
       email: params.email,
       cpf: params.cpf ?? null,
+      phone: params.phone ?? null,
+      birth_date: params.birthDate ?? null,
     })
     .select("id")
     .single();
@@ -127,6 +131,7 @@ export async function cleanupTestCustomer(customerId: string) {
   const admin = createAdminClient();
   await admin.from("referrals").delete().eq("referrer_customer_id", customerId);
   await admin.from("referrals").delete().eq("referred_customer_id", customerId);
+  await admin.from("birthday_notifications").delete().eq("customer_id", customerId);
   await admin.from("credit_transactions").delete().eq("customer_id", customerId);
   await admin.from("subscriptions").delete().eq("customer_id", customerId);
   await admin.from("customers").delete().eq("id", customerId);

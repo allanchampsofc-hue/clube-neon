@@ -44,3 +44,30 @@ export async function updatePlan(planId: string, formData: FormData) {
 
   redirect("/painel/sistema?success=1");
 }
+
+export async function updateBirthdayConfig(formData: FormData) {
+  await requireSuperAdmin();
+
+  const birthdayMessage = String(formData.get("birthday_message") ?? "").trim();
+  const birthdayGift = String(formData.get("birthday_gift") ?? "").trim();
+
+  if (!birthdayMessage || !birthdayGift) {
+    redirect(
+      `/painel/sistema?error=${encodeURIComponent("Preencha a mensagem e o mimo de aniversário.")}`,
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error } = await supabase
+    .from("system_config")
+    .update({ birthday_message: birthdayMessage, birthday_gift: birthdayGift })
+    .eq("id", config!.id);
+
+  if (error) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/painel/sistema?success=1");
+}

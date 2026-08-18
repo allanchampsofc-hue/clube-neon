@@ -10,8 +10,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { updatePlan } from "./actions";
+import { updatePlan, updateBirthdayConfig } from "./actions";
 
 function centsToReais(cents: number) {
   return (cents / 100).toFixed(2);
@@ -28,6 +29,11 @@ export default async function PainelSistemaPage({
     .from("plans")
     .select("*")
     .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const { data: config } = await supabase
+    .from("system_config")
+    .select("birthday_message, birthday_gift")
     .limit(1)
     .maybeSingle();
 
@@ -148,6 +154,43 @@ export default async function PainelSistemaPage({
           </CardContent>
         </Card>
       )}
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Aniversário</CardTitle>
+          <CardDescription>
+            Enviada automaticamente por WhatsApp no dia do aniversário do
+            cliente (assinatura ATIVA). Variáveis disponíveis: {"{nome}"},{" "}
+            {"{mimo}"}, {"{plano}"}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateBirthdayConfig} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="birthday_message">Mensagem de aniversário</Label>
+              <Textarea
+                id="birthday_message"
+                name="birthday_message"
+                rows={5}
+                defaultValue={config?.birthday_message ?? ""}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="birthday_gift">Mimo de aniversário</Label>
+              <Input
+                id="birthday_gift"
+                name="birthday_gift"
+                defaultValue={config?.birthday_gift ?? ""}
+                required
+              />
+            </div>
+            <Button type="submit" className="mt-2">
+              Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

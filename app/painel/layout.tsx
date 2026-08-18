@@ -51,6 +51,12 @@ export default async function PainelLayout({
         >
           Indicações
         </a>
+        <a
+          href="/painel/aniversariantes"
+          className="hover:text-primary hover:underline"
+        >
+          Aniversariantes
+        </a>
         {isManager ? (
           <a
             href="/painel/relatorios"
