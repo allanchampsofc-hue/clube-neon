@@ -33,6 +33,7 @@ export default function RedefinirSenhaPage() {
   if (!supabaseRef.current) supabaseRef.current = createRecoveryClient();
   const [ready, setReady] = useState(false);
   const [linkInvalid, setLinkInvalid] = useState(false);
+  const [debugMessage, setDebugMessage] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -57,14 +58,27 @@ export default function RedefinirSenhaPage() {
         .setSession({ access_token: accessToken, refresh_token: refreshToken })
         .then(({ error: sessionError }) => {
           if (sessionError) {
+            console.error("setSession falhou:", sessionError);
+            setDebugMessage(sessionError.message);
             setLinkInvalid(true);
           } else {
             // Limpa o hash da URL (contém tokens sensíveis) sem recarregar.
             window.history.replaceState(null, "", window.location.pathname);
             setReady(true);
           }
+        })
+        .catch((e: unknown) => {
+          console.error("setSession lançou exceção:", e);
+          setDebugMessage(e instanceof Error ? e.message : String(e));
+          setLinkInvalid(true);
         });
       return;
+    }
+
+    if (!accessToken) {
+      setDebugMessage("Nenhum token encontrado no link (hash vazio).");
+    } else {
+      setDebugMessage(`Hash presente mas incompleto: type=${type}, tem access_token=${!!accessToken}, tem refresh_token=${!!refreshToken}`);
     }
 
     // Sem hash de recuperação — confirma se já existe sessão válida antes
@@ -130,6 +144,11 @@ export default function RedefinirSenhaPage() {
               <p className="text-sm text-destructive">
                 Esse link de redefinição é inválido ou expirou. Peça um novo.
               </p>
+              {debugMessage ? (
+                <p className="text-xs text-muted-foreground">
+                  Detalhe técnico: {debugMessage}
+                </p>
+              ) : null}
               <a
                 href="/esqueci-senha"
                 className="text-sm text-primary underline-offset-4 hover:underline"
