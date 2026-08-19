@@ -17,6 +17,33 @@ import { createCreditUseRequest, cancelCreditUseRequest } from "./actions";
 
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLLS = 200; // ~10 minutos
+const SLOW_WARNING_MS = 5000;
+const GENERATE_TIMEOUT_MS = 8000;
+
+/**
+ * Corre `promise` contra um timeout local. Isso NÃO cancela a Server Action
+ * no servidor (ela continua rodando e pode terminar depois) — só evita que a
+ * UI fique presa esperando pra sempre se a resposta demorar/nunca chegar.
+ * Ver [[feedback_...]] no briefing: bug real em produção era o catch
+ * ausente ao redor do await, que deixava "Gerando..." travado pra sempre
+ * quando a Server Action rejeitava (timeout de função da Vercel, erro de
+ * rede) em vez de resolver com { ok: false }.
+ */
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timeout")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 type Step =
   | { name: "amount" }
@@ -49,8 +76,16 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
   const [amountInput, setAmountInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [slowLoading, setSlowLoading] = useState(false);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const pollCountRef = useRef(0);
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (step.name !== "code") return;
@@ -116,27 +151,46 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
     }
 
     setLoading(true);
-    const result = await createCreditUseRequest(amountCents);
-    setLoading(false);
+    setSlowLoading(false);
+    slowTimerRef.current = setTimeout(() => setSlowLoading(true), SLOW_WARNING_MS);
 
-    if (!result.ok) {
-      setError(result.error);
-      return;
+    try {
+      const result = await withTimeout(
+        createCreditUseRequest(amountCents),
+        GENERATE_TIMEOUT_MS,
+      );
+
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      setStep({
+        name: "code",
+        requestId: result.requestId,
+        qrUrl: result.qrUrl,
+        validationCode: result.validationCode,
+        expiresAt: result.expiresAt,
+        amountCents: result.amountCents,
+      });
+    } catch {
+      setError("Não foi possível gerar o código. Tente novamente.");
+    } finally {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current);
+      setSlowLoading(false);
+      setLoading(false);
     }
-    setStep({
-      name: "code",
-      requestId: result.requestId,
-      qrUrl: result.qrUrl,
-      validationCode: result.validationCode,
-      expiresAt: result.expiresAt,
-      amountCents: result.amountCents,
-    });
   }
 
   async function handleCancel(requestId: string) {
     setLoading(true);
-    await cancelCreditUseRequest(requestId);
-    setLoading(false);
+    try {
+      await cancelCreditUseRequest(requestId);
+    } catch {
+      // Best-effort — mesmo se a chamada falhar, deixamos o cliente gerar
+      // um novo código; o pedido antigo é substituído de qualquer forma.
+    } finally {
+      setLoading(false);
+    }
     setStep({ name: "amount" });
   }
 
@@ -161,10 +215,26 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
               autoFocus
             />
           </div>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
-          <Button onClick={handleGenerate} disabled={loading}>
-            {loading ? "Gerando..." : "Gerar código"}
-          </Button>
+          {error ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-destructive">{error}</p>
+              <Button variant="outline" onClick={handleGenerate}>
+                Tentar novamente
+              </Button>
+            </div>
+          ) : null}
+          {loading ? (
+            <p className="text-center text-xs text-muted-foreground">
+              {slowLoading
+                ? "Ainda processando..."
+                : "Aguarde, isso leva menos de 5 segundos."}
+            </p>
+          ) : null}
+          {!error ? (
+            <Button onClick={handleGenerate} disabled={loading}>
+              {loading ? "Gerando…" : "Gerar código"}
+            </Button>
+          ) : null}
         </CardContent>
       </Card>
     );
