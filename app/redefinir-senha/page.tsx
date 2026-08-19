@@ -20,10 +20,13 @@ import { Button } from "@/components/ui/button";
 // chamada manual a setSession abaixo, invalidando o link de recuperação
 // numa corrida entre as duas tentativas de consumo do mesmo token.
 function createRecoveryClient() {
+  if (typeof window !== "undefined") {
+    console.log("DEBUG raw NEXT_PUBLIC_SUPABASE_URL=", process.env.NEXT_PUBLIC_SUPABASE_URL);
+  }
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { detectSessionInUrl: false } },
+    { auth: { detectSessionInUrl: false }, isSingleton: false },
   );
 }
 
