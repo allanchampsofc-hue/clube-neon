@@ -76,7 +76,10 @@ describeIfEnv("QR Code de utilização de crédito (integração)", () => {
     expect(row?.amount_cents).toBe(1000);
     const secondsToExpire = (new Date(row!.expires_at).getTime() - Date.now()) / 1000;
     expect(secondsToExpire).toBeGreaterThan(4 * 60);
-    expect(secondsToExpire).toBeLessThanOrEqual(5 * 60);
+    // Pequena folga pro round-trip de rede entre o Date.now() daqui e o
+    // now() do Postgres no momento do insert (mesma classe de flakiness já
+    // vista no teste de rollover de cashback — ver memória do projeto).
+    expect(secondsToExpire).toBeLessThanOrEqual(5 * 60 + 5);
   });
 
   it("gerar um novo QR cancela o QR pendente anterior", async () => {
