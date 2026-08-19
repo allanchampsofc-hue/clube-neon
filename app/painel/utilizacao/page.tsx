@@ -57,9 +57,14 @@ export default async function PainelUtilizacaoPage({
         <h1 className="font-heading text-2xl font-bold text-primary">
           Utilização de crédito
         </h1>
-        <a href="/painel/utilizacao/nova" className={buttonVariants()}>
-          Nova utilização
-        </a>
+        <div className="flex gap-2">
+          <a href="/painel/utilizacao/escanear" className={buttonVariants({ variant: "secondary" })}>
+            📷 Escanear QR do cliente
+          </a>
+          <a href="/painel/utilizacao/nova" className={buttonVariants()}>
+            Nova utilização
+          </a>
+        </div>
       </div>
 
       <form className="flex flex-wrap items-end gap-3">

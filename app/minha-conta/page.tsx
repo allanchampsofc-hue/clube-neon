@@ -251,6 +251,14 @@ export default async function MinhaContaPage({
                 </p>
               </>
             ) : null}
+            {balanceCents > 0 ? (
+              <a
+                href="/minha-conta/usar-credito"
+                className={buttonVariants({ variant: "secondary", className: "mt-1 self-start" })}
+              >
+                🍕 Usar crédito agora
+              </a>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

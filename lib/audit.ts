@@ -14,6 +14,9 @@ export const AUDIT_ACTIONS = [
   "USER_ROLE_CHANGED",
   "PASSWORD_CHANGED",
   "PASSWORD_RESET_BY_STAFF",
+  "CREDIT_USE_REQUEST_CREATED",
+  "CREDIT_USE_REQUEST_CONFIRMED",
+  "CREDIT_USE_REQUEST_EXPIRED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -34,6 +37,9 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   USER_ROLE_CHANGED: "Perfil de acesso alterado",
   PASSWORD_CHANGED: "Senha alterada pelo próprio cliente",
   PASSWORD_RESET_BY_STAFF: "Senha redefinida pela equipe",
+  CREDIT_USE_REQUEST_CREATED: "QR Code de utilização gerado",
+  CREDIT_USE_REQUEST_CONFIRMED: "QR Code de utilização confirmado",
+  CREDIT_USE_REQUEST_EXPIRED: "QR Code de utilização expirado",
 };
 
 export const AUDIT_ENTITIES = [
@@ -41,4 +47,5 @@ export const AUDIT_ENTITIES = [
   "customer",
   "subscription",
   "credit_transaction",
+  "credit_use_request",
 ] as const;
