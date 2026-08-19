@@ -5,20 +5,7 @@ import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (!isAuthorizedCronRequest(authHeader)) {
-    // DEBUG TEMPORÁRIO — remover depois de diagnosticar o 401 dos crons.
-    // Só expõe tamanhos, nunca o conteúdo do segredo.
-    return NextResponse.json(
-      {
-        error: "Unauthorized",
-        debug: {
-          hasSecretEnv: Boolean(process.env.CRON_SECRET),
-          secretEnvLength: process.env.CRON_SECRET?.length ?? 0,
-          receivedHeaderLength: authHeader?.length ?? 0,
-          receivedHeaderPresent: authHeader !== null,
-        },
-      },
-      { status: 401 },
-    );
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const supabase = createAdminClient();
