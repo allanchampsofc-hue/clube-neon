@@ -54,11 +54,18 @@ export default function RedefinirSenhaPage() {
     const type = hashParams.get("type");
 
     if (accessToken && refreshToken && type === "recovery") {
+      // setSession() com um access_token ainda válido chama internamente
+      // GET /auth/v1/user pra validar (GoTrueClient._getUser) — esse
+      // caminho especificamente retorna 404 "Invalid path specified in
+      // request URL" em produção (confirmado via teste direto: a mesma
+      // chamada funciona perfeitamente fora do client da lib). Usar
+      // refreshSession força o caminho de POST /auth/v1/token?grant_type=
+      // refresh_token, que testado diretamente sempre funcionou.
       supabase.auth
-        .setSession({ access_token: accessToken, refresh_token: refreshToken })
+        .refreshSession({ refresh_token: refreshToken })
         .then(({ error: sessionError }) => {
           if (sessionError) {
-            console.error("setSession falhou:", sessionError);
+            console.error("refreshSession falhou:", sessionError);
             setDebugMessage(sessionError.message);
             setLinkInvalid(true);
           } else {
@@ -68,7 +75,7 @@ export default function RedefinirSenhaPage() {
           }
         })
         .catch((e: unknown) => {
-          console.error("setSession lançou exceção:", e);
+          console.error("refreshSession lançou exceção:", e);
           setDebugMessage(e instanceof Error ? e.message : String(e));
           setLinkInvalid(true);
         });
