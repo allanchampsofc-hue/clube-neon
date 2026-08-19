@@ -9,7 +9,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { MembershipBadge } from "@/components/membership-badge";
+import { changeOwnPassword } from "./actions";
 
 const LEVEL_LABELS: Record<string, string> = {
   MEMBRO: "Membro",
@@ -17,8 +21,11 @@ const LEVEL_LABELS: Record<string, string> = {
   BLACK: "Black",
 };
 
-export default async function MeuPerfilPage() {
+export default async function MeuPerfilPage({
+  searchParams,
+}: PageProps<"/minha-conta/perfil">) {
   const { customer: customerBasic } = await requireCustomer();
+  const { pwd_error: pwdError, pwd_success: pwdSuccess } = await searchParams;
   const supabase = await createClient();
 
   const { data: customer } = await supabase
@@ -96,6 +103,61 @@ export default async function MeuPerfilPage() {
               ))}
             </ul>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Alterar senha</CardTitle>
+          <CardDescription>
+            Informe a senha atual para escolher uma nova.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={changeOwnPassword} className="flex flex-col gap-4">
+            {pwdError ? (
+              <p className="text-sm text-destructive">{String(pwdError)}</p>
+            ) : null}
+            {pwdSuccess ? (
+              <p className="text-sm text-primary">Senha alterada com sucesso.</p>
+            ) : null}
+
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="current_password">Senha atual</Label>
+              <Input
+                id="current_password"
+                name="current_password"
+                type="password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="new_password">Nova senha</Label>
+              <Input
+                id="new_password"
+                name="new_password"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="confirm_password">Confirmar nova senha</Label>
+              <Input
+                id="confirm_password"
+                name="confirm_password"
+                type="password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </div>
+            <Button type="submit" className="mt-2">
+              Salvar nova senha
+            </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

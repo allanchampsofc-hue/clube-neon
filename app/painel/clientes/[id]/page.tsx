@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { updateCustomer } from "../actions";
 import { adjustCredit } from "../credit-actions";
 import { AdvancedCreditDialog } from "./advanced-credit-dialog";
+import { resetCustomerPassword } from "./password-actions";
 import { MembershipBadge } from "@/components/membership-badge";
 import {
   activateSubscription,
@@ -37,8 +38,16 @@ export default async function ClienteDetalhePage({
 }: PageProps<"/painel/clientes/[id]">) {
   const { roles } = await requireStaff();
   const isAdmin = roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
+  const isManager = isAdmin || roles.includes("GERENTE");
   const { id } = await params;
-  const { error, success, adv_error: advError, adv_success: advSuccess } = await searchParams;
+  const {
+    error,
+    success,
+    adv_error: advError,
+    adv_success: advSuccess,
+    pwd_error: pwdError,
+    pwd_success: pwdSuccess,
+  } = await searchParams;
 
   const supabase = await createClient();
   const { data: customer } = await supabase
@@ -336,6 +345,68 @@ export default async function ClienteDetalhePage({
           )}
         </CardContent>
       </Card>
+
+      {isManager ? (
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Redefinir senha</CardTitle>
+            <CardDescription>
+              Use quando o cliente esquecer a senha. Confirme a identidade
+              dele antes (nome, CPF, número de membro) — essa ação fica
+              registrada na auditoria com o seu usuário.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!customer.user_id ? (
+              <p className="text-sm text-muted-foreground">
+                Esse cliente não tem login vinculado — não há senha pra
+                redefinir.
+              </p>
+            ) : (
+              <form
+                action={resetCustomerPassword.bind(null, customer.id)}
+                className="flex flex-col gap-4"
+              >
+                {pwdError ? (
+                  <p className="text-sm text-destructive">{String(pwdError)}</p>
+                ) : null}
+                {pwdSuccess ? (
+                  <p className="text-sm text-primary">
+                    Senha redefinida. Informe a nova senha ao cliente e peça
+                    que ele a troque em Meu Perfil.
+                  </p>
+                ) : null}
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="new_password">Nova senha</Label>
+                  <Input
+                    id="new_password"
+                    name="new_password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="confirm_password">Confirmar nova senha</Label>
+                  <Input
+                    id="confirm_password"
+                    name="confirm_password"
+                    type="password"
+                    autoComplete="new-password"
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <Button type="submit" variant="outline" className="self-start">
+                  Redefinir senha
+                </Button>
+              </form>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card className="max-w-md">
         <CardHeader>

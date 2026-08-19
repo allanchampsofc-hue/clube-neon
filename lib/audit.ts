@@ -12,6 +12,8 @@ export const AUDIT_ACTIONS = [
   "CREDIT_ADJUSTED",
   "CREDIT_EXPIRED",
   "USER_ROLE_CHANGED",
+  "PASSWORD_CHANGED",
+  "PASSWORD_RESET_BY_STAFF",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -30,6 +32,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   CREDIT_ADJUSTED: "Crédito ajustado",
   CREDIT_EXPIRED: "Crédito expirado",
   USER_ROLE_CHANGED: "Perfil de acesso alterado",
+  PASSWORD_CHANGED: "Senha alterada pelo próprio cliente",
+  PASSWORD_RESET_BY_STAFF: "Senha redefinida pela equipe",
 };
 
 export const AUDIT_ENTITIES = [
