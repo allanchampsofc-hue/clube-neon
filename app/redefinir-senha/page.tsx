@@ -14,11 +14,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-// Client próprio desta página, com detectSessionInUrl desligado — o
-// cliente padrão (lib/supabase/client.ts) tenta processar a URL sozinho
-// ao ser instanciado, o que consome o refresh_token (uso único) antes da
-// chamada manual a setSession abaixo, invalidando o link de recuperação
-// numa corrida entre as duas tentativas de consumo do mesmo token.
+// Client próprio desta página, com detectSessionInUrl desligado — a
+// detecção automática (ligada por padrão) processa a URL sozinha ao
+// instanciar o client, competindo com as chamadas manuais abaixo
+// (exchangeCodeForSession/refreshSession) pelo consumo do mesmo código
+// ou refresh_token de uso único. Aqui tudo é tratado explicitamente:
+// ?code= (fluxo PKCE, usado pelo e-mail de verdade do Supabase) ou
+// #access_token=/#refresh_token= (fluxo antigo, usado por links gerados
+// manualmente via admin.generateLink).
 function createRecoveryClient() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -43,11 +46,39 @@ export default function RedefinirSenhaPage() {
   useEffect(() => {
     const supabase = supabaseRef.current!;
 
-    // O link de recuperação do Supabase manda os tokens como fragmento
-    // hash (#access_token=...&refresh_token=...), não como ?code= — o
-    // createBrowserClient (fluxo PKCE por padrão) não detecta isso
-    // sozinho, então lemos o hash manualmente e chamamos setSession, que
-    // funciona independente do flowType configurado no projeto.
+    // O e-mail de verdade que o Supabase manda usa fluxo PKCE — o link
+    // aponta pro /auth/v1/verify do Supabase, que redireciona pra cá com
+    // ?code=... na query string (não #access_token= no hash). O
+    // code_verifier correspondente foi salvo em cookie pelo Server Action
+    // de /esqueci-senha (mesmo client com cookie storage), então só
+    // funciona se o link for aberto no MESMO navegador que pediu a
+    // redefinição.
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get("code");
+
+    if (code) {
+      supabase.auth
+        .exchangeCodeForSession(code)
+        .then(({ error: exchangeError }) => {
+          if (exchangeError) {
+            console.error("exchangeCodeForSession falhou:", exchangeError);
+            setDebugMessage(exchangeError.message);
+            setLinkInvalid(true);
+          } else {
+            window.history.replaceState(null, "", window.location.pathname);
+            setReady(true);
+          }
+        })
+        .catch((e: unknown) => {
+          console.error("exchangeCodeForSession lançou exceção:", e);
+          setDebugMessage(e instanceof Error ? e.message : String(e));
+          setLinkInvalid(true);
+        });
+      return;
+    }
+
+    // Fallback: links gerados manualmente (ex: admin.generateLink) usam o
+    // formato antigo, com os tokens direto no fragmento hash.
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
     const accessToken = hashParams.get("access_token");
     const refreshToken = hashParams.get("refresh_token");
@@ -80,7 +111,7 @@ export default function RedefinirSenhaPage() {
     }
 
     if (!accessToken) {
-      setDebugMessage("Nenhum token encontrado no link (hash vazio).");
+      setDebugMessage("Nenhum código (?code=) nem token (#access_token=) encontrado no link.");
     } else {
       setDebugMessage(`Hash presente mas incompleto: type=${type}, tem access_token=${!!accessToken}, tem refresh_token=${!!refreshToken}`);
     }
