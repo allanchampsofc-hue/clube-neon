@@ -20,7 +20,14 @@ const MAX_POLLS = 200; // ~10 minutos
 
 type Step =
   | { name: "amount" }
-  | { name: "qr"; requestId: string; qrUrl: string; expiresAt: string; amountCents: number }
+  | {
+      name: "code";
+      requestId: string;
+      qrUrl: string;
+      validationCode: string;
+      expiresAt: string;
+      amountCents: number;
+    }
   | { name: "success"; amountCents: number; balanceAfterCents: number | null }
   | { name: "expired" };
 
@@ -46,7 +53,7 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
   const pollCountRef = useRef(0);
 
   useEffect(() => {
-    if (step.name !== "qr") return;
+    if (step.name !== "code") return;
 
     const expiresAtMs = new Date(step.expiresAt).getTime();
     const tick = () => {
@@ -117,9 +124,10 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
       return;
     }
     setStep({
-      name: "qr",
+      name: "code",
       requestId: result.requestId,
       qrUrl: result.qrUrl,
+      validationCode: result.validationCode,
       expiresAt: result.expiresAt,
       amountCents: result.amountCents,
     });
@@ -155,33 +163,52 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
           </div>
           {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button onClick={handleGenerate} disabled={loading}>
-            {loading ? "Gerando..." : "Gerar QR Code"}
+            {loading ? "Gerando..." : "Gerar código"}
           </Button>
         </CardContent>
       </Card>
     );
   }
 
-  if (step.name === "qr") {
+  if (step.name === "code") {
     const minutes = Math.floor(remainingSeconds / 60);
     const seconds = remainingSeconds % 60;
     return (
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>Mostre este QR pro garçom</CardTitle>
+          <CardTitle>Informe este código ao garçom</CardTitle>
           <CardDescription>
             Expira em {minutes}:{seconds.toString().padStart(2, "0")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
-          <div className="rounded-xl bg-white p-4">
-            <QRCodeSVG value={step.qrUrl} size={220} />
+          <p className="text-sm text-muted-foreground">Seu código:</p>
+          <div className="flex gap-2">
+            {step.validationCode.split("").map((digit, i) => (
+              <div
+                key={i}
+                className="flex h-28 w-20 items-center justify-center rounded-xl border-2 border-secondary bg-secondary/10 text-8xl leading-none font-bold text-secondary"
+              >
+                {digit}
+              </div>
+            ))}
           </div>
-          <p className="text-2xl font-bold text-secondary">
+          <p className="text-2xl font-bold text-primary">
             {formatCents(step.amountCents)}
           </p>
+
+          <details className="w-full text-center">
+            <summary className="cursor-pointer text-xs text-muted-foreground">
+              Prefere QR Code?
+            </summary>
+            <div className="mt-3 flex justify-center rounded-xl bg-white p-3">
+              <QRCodeSVG value={step.qrUrl} size={120} />
+            </div>
+          </details>
+
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={() => handleCancel(step.requestId)}
             disabled={loading}
           >
@@ -196,11 +223,11 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
     return (
       <Card className="max-w-md">
         <CardHeader>
-          <CardTitle>QR expirado</CardTitle>
-          <CardDescription>Gere um novo QR pra continuar.</CardDescription>
+          <CardTitle>Código expirado</CardTitle>
+          <CardDescription>Gere um novo código pra continuar.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={() => setStep({ name: "amount" })}>Gerar novo QR</Button>
+          <Button onClick={() => setStep({ name: "amount" })}>Gerar novo código</Button>
         </CardContent>
       </Card>
     );

@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 
 type DashboardMetrics = {
   assinantes_ativos: number;
@@ -68,6 +69,15 @@ export default async function PainelPage() {
           Visão geral do Clube Neon neste mês.
         </p>
       </div>
+
+      <a
+        href="/garcom"
+        target="_blank"
+        rel="noopener noreferrer"
+        className={buttonVariants({ variant: "secondary", className: "self-start" })}
+      >
+        📱 Abrir tela do garçom →
+      </a>
 
       {!metrics ? (
         <p className="text-sm text-destructive">

@@ -18,6 +18,7 @@ import {
   updateMembershipMessages,
   updateCashbackConfig,
   updateSurveyConfig,
+  updateWaiterPin,
 } from "./actions";
 
 function centsToReais(cents: number) {
@@ -40,7 +41,7 @@ export default async function PainelSistemaPage({
   const { data: config } = await supabase
     .from("system_config")
     .select(
-      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled",
+      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin",
     )
     .limit(1)
     .maybeSingle();
@@ -283,6 +284,36 @@ export default async function PainelSistemaPage({
             </div>
             <Button type="submit" className="mt-2">
               Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>PIN da tela do garçom</CardTitle>
+          <CardDescription>
+            Este PIN protege o acesso à tela clube-neon.vercel.app/garcom,
+            usada pra confirmar utilização de crédito por código de 4
+            dígitos sem precisar de login com conta Supabase.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateWaiterPin} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="waiter_pin">PIN (4 dígitos)</Label>
+              <Input
+                id="waiter_pin"
+                name="waiter_pin"
+                inputMode="numeric"
+                pattern="\d{4}"
+                maxLength={4}
+                defaultValue={config?.waiter_pin ?? ""}
+                required
+              />
+            </div>
+            <Button type="submit" className="mt-2">
+              Alterar PIN
             </Button>
           </form>
         </CardContent>

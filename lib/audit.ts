@@ -17,6 +17,11 @@ export const AUDIT_ACTIONS = [
   "CREDIT_USE_REQUEST_CREATED",
   "CREDIT_USE_REQUEST_CONFIRMED",
   "CREDIT_USE_REQUEST_EXPIRED",
+  "CREDIT_USE_REQUEST_CONFIRMED_BY_CODE",
+  "CREDIT_USE_REQUEST_CODE_INVALID",
+  "WAITER_AUTH_SUCCESS",
+  "WAITER_AUTH_FAILED",
+  "WAITER_PIN_CHANGED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -37,9 +42,14 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   USER_ROLE_CHANGED: "Perfil de acesso alterado",
   PASSWORD_CHANGED: "Senha alterada pelo próprio cliente",
   PASSWORD_RESET_BY_STAFF: "Senha redefinida pela equipe",
-  CREDIT_USE_REQUEST_CREATED: "QR Code de utilização gerado",
+  CREDIT_USE_REQUEST_CREATED: "Código de utilização gerado",
   CREDIT_USE_REQUEST_CONFIRMED: "QR Code de utilização confirmado",
-  CREDIT_USE_REQUEST_EXPIRED: "QR Code de utilização expirado",
+  CREDIT_USE_REQUEST_EXPIRED: "Código de utilização expirado",
+  CREDIT_USE_REQUEST_CONFIRMED_BY_CODE: "Utilização confirmada por código (tela do garçom)",
+  CREDIT_USE_REQUEST_CODE_INVALID: "Código de utilização inválido ou expirado informado",
+  WAITER_AUTH_SUCCESS: "PIN da tela do garçom correto",
+  WAITER_AUTH_FAILED: "PIN da tela do garçom incorreto",
+  WAITER_PIN_CHANGED: "PIN da tela do garçom alterado",
 };
 
 export const AUDIT_ENTITIES = [
@@ -48,4 +58,5 @@ export const AUDIT_ENTITIES = [
   "subscription",
   "credit_transaction",
   "credit_use_request",
+  "system_config",
 ] as const;

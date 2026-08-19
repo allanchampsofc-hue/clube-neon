@@ -7,7 +7,14 @@ import { generateQrToken } from "@/lib/qr-token";
 import { getSiteOrigin } from "@/lib/site-url";
 
 export type CreateCreditUseRequestResult =
-  | { ok: true; requestId: string; qrUrl: string; expiresAt: string; amountCents: number }
+  | {
+      ok: true;
+      requestId: string;
+      qrUrl: string;
+      validationCode: string;
+      expiresAt: string;
+      amountCents: number;
+    }
   | { ok: false; error: string };
 
 /**
@@ -42,11 +49,18 @@ export async function createCreditUseRequest(
     return { ok: false, error: error?.message ?? "Não foi possível gerar o QR Code." };
   }
 
-  const request = data as { id: string; expires_at: string };
+  const request = data as { id: string; expires_at: string; validation_code: string };
   const origin = await getSiteOrigin();
   const qrUrl = `${origin}/painel/utilizacao/confirmar/${request.id}?t=${encodeURIComponent(token)}`;
 
-  return { ok: true, requestId: request.id, qrUrl, expiresAt: request.expires_at, amountCents };
+  return {
+    ok: true,
+    requestId: request.id,
+    qrUrl,
+    validationCode: request.validation_code,
+    expiresAt: request.expires_at,
+    amountCents,
+  };
 }
 
 export async function cancelCreditUseRequest(requestId: string): Promise<{ ok: boolean }> {

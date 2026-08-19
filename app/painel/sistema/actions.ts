@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireSuperAdmin } from "@/lib/auth";
 import { planFormSchema, reaisToCents } from "@/lib/validations/plan";
+import { getRequestIp } from "@/lib/request-ip";
 
 export async function updatePlan(planId: string, formData: FormData) {
   await requireSuperAdmin();
@@ -134,6 +135,41 @@ export async function updateCashbackConfig(formData: FormData) {
   if (error) {
     redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
   }
+
+  redirect("/painel/sistema?success=1");
+}
+
+export async function updateWaiterPin(formData: FormData) {
+  const { user } = await requireSuperAdmin();
+
+  const pin = String(formData.get("waiter_pin") ?? "").trim();
+
+  if (!/^\d{4}$/.test(pin)) {
+    redirect(`/painel/sistema?error=${encodeURIComponent("O PIN precisa ter exatamente 4 dígitos numéricos.")}`);
+  }
+  if (pin === "0000") {
+    redirect(`/painel/sistema?error=${encodeURIComponent("0000 é reservado — escolha outro PIN.")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error } = await supabase
+    .from("system_config")
+    .update({ waiter_pin: pin })
+    .eq("id", config!.id);
+
+  if (error) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await supabase.rpc("log_audit_event", {
+    p_action: "WAITER_PIN_CHANGED",
+    p_entity: "system_config",
+    p_entity_id: config!.id,
+    p_after_state: { changed_by: user.id },
+    p_ip_address: await getRequestIp(),
+  });
 
   redirect("/painel/sistema?success=1");
 }
