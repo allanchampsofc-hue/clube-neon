@@ -20,9 +20,6 @@ import { Button } from "@/components/ui/button";
 // chamada manual a setSession abaixo, invalidando o link de recuperação
 // numa corrida entre as duas tentativas de consumo do mesmo token.
 function createRecoveryClient() {
-  if (typeof window !== "undefined") {
-    console.log("DEBUG raw NEXT_PUBLIC_SUPABASE_URL=", process.env.NEXT_PUBLIC_SUPABASE_URL);
-  }
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -57,21 +54,10 @@ export default function RedefinirSenhaPage() {
     const type = hashParams.get("type");
 
     if (accessToken && refreshToken && type === "recovery") {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const authInternals = supabase.auth as any;
-      console.log(
-        "DEBUG auth.url=",
-        authInternals.url,
-        "auth.headers=",
-        JSON.stringify(authInternals.headers),
-      );
-      // setSession() com um access_token ainda válido chama internamente
-      // GET /auth/v1/user pra validar (GoTrueClient._getUser) — esse
-      // caminho especificamente retorna 404 "Invalid path specified in
-      // request URL" em produção (confirmado via teste direto: a mesma
-      // chamada funciona perfeitamente fora do client da lib). Usar
-      // refreshSession força o caminho de POST /auth/v1/token?grant_type=
-      // refresh_token, que testado diretamente sempre funcionou.
+      // refreshSession sempre bate em POST /auth/v1/token?grant_type=
+      // refresh_token — caminho mais direto que setSession (que só faz
+      // isso quando o access_token já está expirado; senão valida via
+      // GET /auth/v1/user, um passo a mais sem necessidade aqui).
       supabase.auth
         .refreshSession({ refresh_token: refreshToken })
         .then(({ error: sessionError }) => {
