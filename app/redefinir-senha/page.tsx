@@ -54,6 +54,14 @@ export default function RedefinirSenhaPage() {
     const type = hashParams.get("type");
 
     if (accessToken && refreshToken && type === "recovery") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const authInternals = supabase.auth as any;
+      console.log(
+        "DEBUG auth.url=",
+        authInternals.url,
+        "auth.headers=",
+        JSON.stringify(authInternals.headers),
+      );
       // setSession() com um access_token ainda válido chama internamente
       // GET /auth/v1/user pra validar (GoTrueClient._getUser) — esse
       // caminho especificamente retorna 404 "Invalid path specified in
