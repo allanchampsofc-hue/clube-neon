@@ -52,6 +52,12 @@ export default async function LoginPage({
             <Button type="submit" className="mt-2">
               Entrar
             </Button>
+            <a
+              href="/esqueci-senha"
+              className="text-center text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Esqueci minha senha
+            </a>
           </form>
         </CardContent>
       </Card>
