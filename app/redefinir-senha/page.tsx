@@ -55,6 +55,16 @@ export default function RedefinirSenhaPage() {
     // redefinição.
     const searchParams = new URLSearchParams(window.location.search);
     const code = searchParams.get("code");
+    const urlError = searchParams.get("error_description") ?? searchParams.get("error_code") ?? searchParams.get("error");
+
+    if (urlError) {
+      // O Supabase já rejeitou o link antes mesmo de chegar aqui (token
+      // expirado/já usado) — o redirect vem com esses parâmetros de erro
+      // em vez de ?code=.
+      setDebugMessage(decodeURIComponent(urlError));
+      setLinkInvalid(true);
+      return;
+    }
 
     if (code) {
       supabase.auth
