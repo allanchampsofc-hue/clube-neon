@@ -120,18 +120,15 @@ export default function RedefinirSenhaPage() {
       return;
     }
 
-    if (!accessToken) {
-      setDebugMessage("Nenhum código (?code=) nem token (#access_token=) encontrado no link.");
-    } else {
-      setDebugMessage(`Hash presente mas incompleto: type=${type}, tem access_token=${!!accessToken}, tem refresh_token=${!!refreshToken}`);
-    }
-
-    // Sem hash de recuperação — confirma se já existe sessão válida antes
-    // de desistir (ex: usuário atualizou a página depois de já validada).
+    // Sem código nem hash — confirma se já existe sessão válida antes de
+    // desistir. É o caminho normal quando o usuário vem de
+    // /confirmar-redefinicao (verifyOtp já estabeleceu a sessão no
+    // cookie), e também cobre um refresh da página depois de validada.
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         setReady(true);
       } else {
+        setDebugMessage("Nenhuma sessão de recuperação ativa — abra o link do e-mail primeiro.");
         setLinkInvalid(true);
       }
     });
