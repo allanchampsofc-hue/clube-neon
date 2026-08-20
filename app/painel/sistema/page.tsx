@@ -19,6 +19,7 @@ import {
   updateCashbackConfig,
   updateSurveyConfig,
   updateWaiterPin,
+  updatePricingConfig,
 } from "./actions";
 
 function centsToReais(cents: number) {
@@ -41,7 +42,7 @@ export default async function PainelSistemaPage({
   const { data: config } = await supabase
     .from("system_config")
     .select(
-      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin",
+      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin, monthly_price_cents, annual_price_cents",
     )
     .limit(1)
     .maybeSingle();
@@ -281,6 +282,47 @@ export default async function PainelSistemaPage({
                 defaultChecked={config?.cashback_enabled ?? true}
               />
               <Label htmlFor="cashback_enabled">Cashback ativado</Label>
+            </div>
+            <Button type="submit" className="mt-2">
+              Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Preços do plano anual</CardTitle>
+          <CardDescription>
+            Valores exibidos na landing page e no checkout — não mudam o
+            valor efetivamente cobrado por ciclo (isso fica no plano, acima).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updatePricingConfig} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="monthly_price_reais">Parcela mensal (R$)</Label>
+              <Input
+                id="monthly_price_reais"
+                name="monthly_price_reais"
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={centsToReais(config?.monthly_price_cents ?? 4990)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="annual_price_reais">Preço à vista (R$)</Label>
+              <Input
+                id="annual_price_reais"
+                name="annual_price_reais"
+                type="number"
+                step="0.01"
+                min="0"
+                defaultValue={centsToReais(config?.annual_price_cents ?? 49900)}
+                required
+              />
             </div>
             <Button type="submit" className="mt-2">
               Salvar

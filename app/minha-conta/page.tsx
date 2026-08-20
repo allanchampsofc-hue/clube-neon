@@ -8,6 +8,7 @@ import {
   type SubscriptionStatus,
 } from "@/lib/subscriptions";
 import { CREDIT_TRANSACTION_TYPE_LABELS, type CreditTransactionType } from "@/lib/credit-transactions";
+import { PAYMENT_TYPE_LABELS } from "@/lib/subscriptions";
 import {
   Card,
   CardContent,
@@ -26,6 +27,8 @@ type SubscriptionRow = {
   status: SubscriptionStatus;
   started_at: string | null;
   current_period_end: string | null;
+  payment_type: "MONTHLY" | "ANNUAL";
+  cancellation_effective_at: string | null;
   plan: {
     name: string;
     price_cents: number;
@@ -52,7 +55,7 @@ export default async function MinhaContaPage({
   const { data: subscriptionData } = await supabase
     .from("subscriptions")
     .select(
-      "id, status, started_at, current_period_end, plan:plans(name, price_cents, monthly_credit_cents, duration_months, grace_period_months)",
+      "id, status, started_at, current_period_end, payment_type, cancellation_effective_at, plan:plans(name, price_cents, monthly_credit_cents, duration_months, grace_period_months)",
     )
     .eq("customer_id", customer.id)
     .order("created_at", { ascending: false })
@@ -162,6 +165,18 @@ export default async function MinhaContaPage({
       ? `Mês ${cycle.cycle_number} de ${plan.duration_months}`
       : "—";
 
+  const daysUntilExpiry = cycle
+    ? Math.ceil((new Date(cycle.period_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+  // "Alto" aqui é uma escolha simples: pelo menos 30% do crédito do mês
+  // ainda disponível — evita alertar quem já gastou quase tudo.
+  const showExpiryUrgency =
+    daysUntilExpiry !== null &&
+    daysUntilExpiry <= 5 &&
+    daysUntilExpiry >= 0 &&
+    balanceCents >= totalCents * 0.3 &&
+    balanceCents > 0;
+
   return (
     <div className="flex flex-col gap-6">
       {pending ? (
@@ -213,8 +228,8 @@ export default async function MinhaContaPage({
           <CardHeader>
             <CardTitle>Você ainda não é assinante do Clube Neon</CardTitle>
             <CardDescription>
-              Pague R$ 49,90/mês e tenha R$ 99,00 de crédito pra usar na Neon
-              quando quiser.
+              Plano anual — 12x R$ 49,90 ou R$ 499,00 à vista — R$ 99,00 de
+              crédito todo mês, válido no mês de referência.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -235,8 +250,8 @@ export default async function MinhaContaPage({
               </Badge>
             </div>
             <CardDescription>
-              R$ {formatCents(balanceCents).replace("R$", "").trim()}{" "}
-              disponíveis este mês
+              {formatCents(balanceCents)} disponíveis este mês
+              {cycle ? ` — válidos até ${formatDate(cycle.period_end)}` : ""}
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
@@ -250,6 +265,18 @@ export default async function MinhaContaPage({
                   {formatCents(usedCents)} utilizados de {formatCents(totalCents)}
                 </p>
               </>
+            ) : null}
+            <p className="text-xs text-muted-foreground">
+              ⚠️ Não acumula para o próximo mês — o crédito não utilizado
+              expira no fim do ciclo.
+            </p>
+            {showExpiryUrgency ? (
+              <p className="rounded-md bg-destructive/10 p-2 text-sm font-medium text-destructive">
+                ⚠️ Seu crédito de {formatCents(balanceCents)} expira em{" "}
+                {daysUntilExpiry} {daysUntilExpiry === 1 ? "dia" : "dias"}!
+                Não deixe expirar — visite a Neon antes de{" "}
+                {formatDate(cycle!.period_end)}.
+              </p>
             ) : null}
             {balanceCents > 0 ? (
               <a
@@ -271,8 +298,8 @@ export default async function MinhaContaPage({
           </CardHeader>
           <CardContent className="flex flex-col gap-1.5 text-sm">
             <p>
-              <span className="text-muted-foreground">Valor: </span>
-              {formatCents(plan.price_cents)}/mês
+              <span className="text-muted-foreground">Pagamento: </span>
+              Plano anual — {PAYMENT_TYPE_LABELS[subscription.payment_type]}
             </p>
             <p>
               <span className="text-muted-foreground">Início: </span>
@@ -282,7 +309,7 @@ export default async function MinhaContaPage({
               <span className="text-muted-foreground">Término: </span>
               {formatDate(contractEnd)}
             </p>
-            {isActive && !inGracePeriod ? (
+            {isActive && !inGracePeriod && subscription.payment_type === "MONTHLY" ? (
               <p>
                 <span className="text-muted-foreground">Próxima cobrança: </span>
                 {formatDate(subscription.current_period_end)}
@@ -291,6 +318,22 @@ export default async function MinhaContaPage({
             <p>
               <span className="text-muted-foreground">Ciclo atual: </span>
               {cycleLabel}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {subscription?.cancellation_effective_at ? (
+        <Card className="max-w-md border-destructive/40 bg-destructive/5">
+          <CardContent className="pt-6 text-sm">
+            <p className="font-medium text-destructive">
+              Cancelamento agendado
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Sua assinatura encerra em{" "}
+              {formatDate(subscription.cancellation_effective_at)}. Até lá,
+              você continua recebendo e podendo usar o crédito mensal
+              normalmente.
             </p>
           </CardContent>
         </Card>

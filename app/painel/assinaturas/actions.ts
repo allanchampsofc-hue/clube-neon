@@ -145,3 +145,21 @@ export async function resumeSubscription(
 ) {
   return setSubscriptionStatus(redirectTo, subscriptionId, "ATIVA");
 }
+
+export async function revertCancellation(
+  redirectTo: string,
+  subscriptionId: string,
+) {
+  await requireStaff();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("revert_subscription_cancellation", {
+    p_subscription_id: subscriptionId,
+  });
+
+  if (error) {
+    redirect(`${redirectTo}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect(`${redirectTo}?success=1`);
+}

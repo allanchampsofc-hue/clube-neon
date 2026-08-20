@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { MembershipBadge } from "@/components/membership-badge";
 import { changeOwnPassword } from "./actions";
+import { CancelSubscriptionDialog } from "./cancel-subscription-dialog";
 
 const LEVEL_LABELS: Record<string, string> = {
   MEMBRO: "Membro",
@@ -25,8 +26,28 @@ export default async function MeuPerfilPage({
   searchParams,
 }: PageProps<"/minha-conta/perfil">) {
   const { customer: customerBasic } = await requireCustomer();
-  const { pwd_error: pwdError, pwd_success: pwdSuccess } = await searchParams;
+  const {
+    pwd_error: pwdError,
+    pwd_success: pwdSuccess,
+    cancel_error: cancelError,
+    cancel_success: cancelSuccess,
+  } = await searchParams;
   const supabase = await createClient();
+
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status, cancellation_effective_at")
+    .eq("customer_id", customerBasic.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: config } = await supabase
+    .from("system_config")
+    .select("monthly_price_cents")
+    .limit(1)
+    .maybeSingle();
+  const monthlyPriceCents = config?.monthly_price_cents ?? 4990;
 
   const { data: customer } = await supabase
     .from("customers")
@@ -160,6 +181,32 @@ export default async function MeuPerfilPage({
           </form>
         </CardContent>
       </Card>
+
+      {subscription?.status === "ATIVA" ? (
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Assinatura</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {cancelError ? (
+              <p className="text-sm text-destructive">{String(cancelError)}</p>
+            ) : null}
+            {cancelSuccess ? (
+              <p className="text-sm text-primary">
+                Cancelamento agendado com sucesso.
+              </p>
+            ) : null}
+            {subscription.cancellation_effective_at ? (
+              <p className="text-sm text-muted-foreground">
+                Cancelamento agendado — sua assinatura encerra em{" "}
+                {formatDate(subscription.cancellation_effective_at)}.
+              </p>
+            ) : (
+              <CancelSubscriptionDialog monthlyPriceCents={monthlyPriceCents} />
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }

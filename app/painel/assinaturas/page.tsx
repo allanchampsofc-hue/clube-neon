@@ -10,6 +10,7 @@ import {
   cancelSubscription,
   resumeSubscription,
   suspendSubscription,
+  revertCancellation,
 } from "./actions";
 
 const STATUS_OPTIONS: SubscriptionStatus[] = [
@@ -36,7 +37,7 @@ export default async function PainelAssinaturasPage({
   let query = supabase
     .from("subscriptions")
     .select(
-      "id, status, started_at, current_period_end, customer:customers(id, name, member_number), plan:plans(name, price_cents, duration_months)",
+      "id, status, started_at, current_period_end, cancellation_effective_at, customer:customers(id, name, member_number), plan:plans(name, price_cents, duration_months)",
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -54,6 +55,7 @@ export default async function PainelAssinaturasPage({
     status: SubscriptionStatus;
     started_at: string | null;
     current_period_end: string | null;
+    cancellation_effective_at: string | null;
     customer: { id: string; name: string; member_number: string } | null;
     plan: { name: string; price_cents: number; duration_months: number } | null;
   }>;
@@ -145,7 +147,17 @@ export default async function PainelAssinaturasPage({
                     {subscription.plan ? formatCents(subscription.plan.price_cents) : "—"}
                   </td>
                   <td className="px-3 py-2">
-                    {SUBSCRIPTION_STATUS_LABELS[subscription.status] ?? subscription.status}
+                    {subscription.cancellation_effective_at ? (
+                      <span className="text-destructive">
+                        CANCELAMENTO AGENDADO
+                        <br />
+                        <span className="text-xs text-muted-foreground">
+                          efetivo em {formatDate(subscription.cancellation_effective_at)}
+                        </span>
+                      </span>
+                    ) : (
+                      (SUBSCRIPTION_STATUS_LABELS[subscription.status] ?? subscription.status)
+                    )}
                   </td>
                   <td className="px-3 py-2">{formatDate(subscription.started_at)}</td>
                   <td className="px-3 py-2">{formatDate(contractEnd)}</td>
@@ -191,6 +203,19 @@ export default async function PainelAssinaturasPage({
                         >
                           <Button type="submit" size="sm" variant="outline">
                             Reativar
+                          </Button>
+                        </form>
+                      ) : null}
+                      {subscription.cancellation_effective_at ? (
+                        <form
+                          action={revertCancellation.bind(
+                            null,
+                            redirectTo,
+                            subscription.id,
+                          )}
+                        >
+                          <Button type="submit" size="sm" variant="outline">
+                            Reverter cancelamento
                           </Button>
                         </form>
                       ) : null}

@@ -61,3 +61,34 @@ export async function changeOwnPassword(formData: FormData) {
 
   redirect("/minha-conta/perfil?pwd_success=1");
 }
+
+export async function requestCancellation(formData: FormData) {
+  const { customer } = await requireCustomer();
+  const supabase = await createClient();
+
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("id")
+    .eq("customer_id", customer.id)
+    .eq("status", "ATIVA")
+    .maybeSingle();
+
+  if (!subscription) {
+    redirect(
+      `/minha-conta/perfil?cancel_error=${encodeURIComponent("Nenhuma assinatura ativa encontrada.")}`,
+    );
+  }
+
+  const reason = String(formData.get("reason") ?? "").trim() || null;
+
+  const { error } = await supabase.rpc("request_subscription_cancellation", {
+    p_subscription_id: subscription.id,
+    p_reason: reason,
+  });
+
+  if (error) {
+    redirect(`/minha-conta/perfil?cancel_error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/minha-conta/perfil?cancel_success=1");
+}

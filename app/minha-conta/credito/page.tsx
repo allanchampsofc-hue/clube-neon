@@ -109,6 +109,10 @@ export default async function MeuCreditoPage() {
               fim da carência.
             </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            ⚠️ Não acumula para o próximo mês — o crédito não utilizado
+            expira no fim do ciclo{cycle ? ` (${formatDate(cycle.period_end)})` : ""}.
+          </p>
         </CardContent>
       </Card>
 

@@ -26,3 +26,10 @@ export const SUBSCRIPTION_STATUS_BADGE_VARIANT: Record<
   EXPIRADA: "outline",
   SUSPENSA: "outline",
 };
+
+export type PaymentType = "MONTHLY" | "ANNUAL";
+
+export const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
+  MONTHLY: "Parcelado — 12x",
+  ANNUAL: "À vista",
+};

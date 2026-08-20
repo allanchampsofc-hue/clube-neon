@@ -25,8 +25,8 @@ import { checkout } from "./checkout-actions";
 const STEPS = [
   {
     icon: ClipboardCheckIcon,
-    title: "Escolha seu plano",
-    description: "Assine o Clube Neon por R$ 49,90/mês.",
+    title: "Escolha como pagar",
+    description: "Plano anual do Clube Neon: 12x R$ 49,90 ou R$ 499,00 à vista.",
   },
   {
     icon: ZapIcon,
@@ -35,46 +35,48 @@ const STEPS = [
   },
   {
     icon: PizzaIcon,
-    title: "Use quando quiser",
+    title: "Use no mês",
     description:
-      "R$ 99,00 de crédito liberado todo mês para gastar como preferir na Neon.",
+      "R$ 99,00 de crédito liberado todo mês — válido só no mês vigente, não acumula.",
   },
 ];
 
 const BENEFITS = [
-  "R$ 99,00 em crédito mensal (valor em reais, não pizzas)",
-  "Use como quiser no cardápio da Neon",
+  "R$ 99,00 em crédito todo mês, por 12 meses (R$ 1.188,00 no total)",
+  "Válido no cardápio inteiro da Neon, dentro do mês de referência",
   "Crédito disponível a partir da confirmação do pagamento",
   "Acesso à área do membro com histórico completo",
-  "12 meses de experiência Neon",
+  "Escolha entre parcelado (12x) ou à vista, com desconto",
 ];
 
 const FAQ = [
   {
     question: "Quanto de crédito recebo?",
-    answer: "R$ 99,00 por mês em crédito real (em reais).",
+    answer: "R$ 99,00 por mês em crédito real (em reais), por 12 meses — R$ 1.188,00 no total.",
   },
   {
-    question: "O crédito acumula?",
+    question: "O crédito acumula se eu não usar?",
     answer:
-      "Não. O crédito de cada mês deve ser usado no próprio mês. Apenas o saldo do mês 12 fica disponível por mais 2 meses.",
+      "Não. O crédito de cada mês é válido apenas naquele mês. Se não usar, expira no início do próximo ciclo. A exceção é o último mês do plano: o saldo restante fica disponível por mais 2 meses.",
   },
   {
-    question: "Posso usar tudo de uma vez?",
-    answer: "Sim, dentro do saldo do mês.",
-  },
-  {
-    question: "Posso pedir qualquer coisa?",
-    answer: "Sim, qualquer item do cardápio até o limite disponível.",
-  },
-  {
-    question: "O que acontece se não usar?",
-    answer: "O crédito não usado expira no fim do ciclo e não é estornado.",
-  },
-  {
-    question: "Como cancelo?",
+    question: "Posso cancelar antes dos 12 meses?",
     answer:
-      "Entre em contato com a Neon. O cancelamento encerra a assinatura no fim do período vigente.",
+      "Sim. Ao cancelar, você paga os 3 meses seguintes ao pedido de cancelamento e continua tendo acesso ao crédito nesses meses. Após esse período, a assinatura encerra sem novas cobranças.",
+  },
+  {
+    question: "O que acontece ao fim dos 12 meses?",
+    answer:
+      "Sua assinatura encerra automaticamente. Você terá 2 meses extras para usar o saldo remanescente do último ciclo. Após isso, poderá renovar quando quiser.",
+  },
+  {
+    question: "Qual a diferença entre parcelado e à vista?",
+    answer:
+      "No parcelado você paga 12x R$ 49,90 (total R$ 598,80). No à vista você paga R$ 499,00 de uma vez e economiza R$ 99,80 — equivale a ganhar 1 mês grátis. O crédito mensal de R$ 99,00 é o mesmo nas duas opções.",
+  },
+  {
+    question: "Posso pedir qualquer coisa com o crédito?",
+    answer: "Sim, qualquer item do cardápio até o limite disponível no mês.",
   },
 ];
 
@@ -92,10 +94,24 @@ export default async function LandingPage({
   const supabase = await createClient();
   const { data: config } = await supabase
     .from("system_config")
-    .select("referral_credit_cents")
+    .select("referral_credit_cents, annual_price_cents, monthly_price_cents")
     .limit(1)
     .maybeSingle();
   const referralCreditCents = config?.referral_credit_cents ?? 3000;
+  const monthlyPriceCents = config?.monthly_price_cents ?? 4990;
+  const annualPriceCents = config?.annual_price_cents ?? 49900;
+  const monthlyTotalCents = monthlyPriceCents * 12;
+  const annualSavingsCents = monthlyTotalCents - annualPriceCents;
+
+  const { data: planData } = await supabase
+    .from("plans")
+    .select("monthly_credit_cents")
+    .eq("active", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  const monthlyCreditCents = planData?.monthly_credit_cents ?? 9900;
+  const totalCreditCents = monthlyCreditCents * 12;
 
   let validReferral = false;
   if (refCode) {
@@ -139,8 +155,13 @@ export default async function LandingPage({
           🎉 CLUBE NEON – SUA EXPERIÊNCIA GASTRONÔMICA TODO MÊS
         </h1>
         <p className="max-w-xl text-lg text-primary-foreground/90">
-          Pague R$ 49,90 por mês e tenha R$ 99,00 de crédito para usar na
-          Neon quando quiser. Todo mês, sem complicação.
+          12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)}{" "}
+          à vista — {formatCents(monthlyCreditCents)} de crédito todo mês na
+          Neon, por 12 meses.
+        </p>
+        <p className="max-w-xl text-sm text-primary-foreground/70">
+          Total em crédito no ano: {formatCents(totalCreditCents)}. O
+          crédito de cada mês vale só naquele mês — não acumula.
         </p>
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <a
@@ -180,19 +201,42 @@ export default async function LandingPage({
 
       {/* Seção 3 — O plano */}
       <section id="plano" className="bg-background px-6 py-20">
-        <div className="mx-auto max-w-md">
+        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+          <h2 className="text-center font-heading text-2xl font-bold text-foreground sm:text-3xl">
+            Clube Neon — plano anual, 12 meses
+          </h2>
+          <div className="grid gap-6 sm:grid-cols-2">
+            <Card>
+              <CardHeader className="items-center gap-2 text-center">
+                <Badge variant="outline">PARCELADO</Badge>
+                <CardTitle className="font-heading text-3xl font-extrabold text-primary">
+                  12x {formatCents(monthlyPriceCents)}
+                </CardTitle>
+                <CardDescription>
+                  Total: {formatCents(monthlyTotalCents)} — débito automático todo mês
+                </CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="border-2 border-secondary">
+              <CardHeader className="items-center gap-2 text-center">
+                <Badge variant="secondary">À VISTA ⭐ MAIS VANTAJOSO</Badge>
+                <CardTitle className="font-heading text-3xl font-extrabold text-primary">
+                  {formatCents(annualPriceCents)}
+                </CardTitle>
+                <CardDescription>
+                  Economia de {formatCents(annualSavingsCents)} — equivale a 1 mês grátis
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+
           <Card className="border-2 border-secondary">
-            <CardHeader className="items-center gap-2 text-center">
-              <Badge variant="secondary">CLUBE NEON</Badge>
-              <CardTitle className="font-heading text-4xl font-extrabold text-primary">
-                R$ 49,90
-                <span className="text-base font-medium text-muted-foreground">
-                  /mês
-                </span>
-              </CardTitle>
-              <CardDescription>R$ 99,00 de crédito todo mês</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-4 pt-6">
+              <p className="text-center text-sm">
+                Em ambas as opções: {formatCents(monthlyCreditCents)} de crédito
+                todo mês por 12 meses — total de {formatCents(totalCreditCents)}{" "}
+                em crédito no ano.
+              </p>
               <ul className="flex flex-col gap-2 text-sm">
                 {BENEFITS.map((benefit) => (
                   <li key={benefit} className="flex items-start gap-2">
@@ -201,11 +245,14 @@ export default async function LandingPage({
                   </li>
                 ))}
               </ul>
+              <p className="text-center text-xs text-muted-foreground">
+                ⚠️ O crédito mensal não acumula para o mês seguinte.
+              </p>
               <a
                 href="#checkout"
                 className={buttonVariants({ variant: "secondary", className: "w-full" })}
               >
-                QUERO SER MEMBRO
+                ASSINAR O CLUBE NEON
               </a>
             </CardContent>
           </Card>
@@ -226,14 +273,14 @@ export default async function LandingPage({
           </div>
           <div className="flex flex-col gap-3 rounded-xl bg-card p-6 ring-1 ring-border">
             <p className="font-heading text-xl font-bold text-primary">
-              R$ 99,00 por mês
+              {formatCents(monthlyCreditCents)} por mês
             </p>
             <p className="text-sm text-muted-foreground">
-              Use em qualquer item do cardápio.
+              Use em qualquer item do cardápio, dentro do mês de referência.
             </p>
             <p className="text-xs text-muted-foreground">
               O crédito não utilizado no mês expira no início do próximo
-              ciclo.
+              ciclo e não é transferido.
             </p>
           </div>
         </div>
@@ -262,7 +309,8 @@ export default async function LandingPage({
           Pronto para fazer parte do Clube Neon?
         </h2>
         <p className="text-primary-foreground/90">
-          R$ 49,90/mês. R$ 99,00 de crédito. Todo mês.
+          12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)}{" "}
+          à vista. {formatCents(monthlyCreditCents)} de crédito todo mês.
         </p>
         <a
           href="#checkout"
@@ -280,11 +328,15 @@ export default async function LandingPage({
               Finalize sua assinatura
             </h2>
             <div className="flex flex-col gap-1.5 text-sm text-primary-foreground/90">
-              <p>Clube Neon — R$ 49,90/mês</p>
-              <p>R$ 99,00 de crédito mensal</p>
-              <p>12 meses com renovação automática</p>
+              <p>Clube Neon — plano anual, 12 meses</p>
+              <p>12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)} à vista</p>
+              <p>{formatCents(monthlyCreditCents)} de crédito todo mês</p>
               <p className="mt-2 text-primary-foreground/70">
-                O crédito é liberado mensalmente e não acumula entre meses.
+                Você está contratando o Clube Neon — plano anual de 12
+                meses. Você receberá {formatCents(monthlyCreditCents)} de
+                crédito por mês, válido apenas no mês de referência — o
+                crédito não utilizado expira e não é transferido para o mês
+                seguinte.
               </p>
             </div>
           </div>
@@ -334,6 +386,27 @@ export default async function LandingPage({
                       <Label htmlFor="cpf">CPF (opcional)</Label>
                       <Input id="cpf" name="cpf" placeholder="000.000.000-00" />
                     </div>
+                    <div className="flex flex-col gap-2">
+                      <Label>Forma de pagamento</Label>
+                      <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-input p-3 text-sm has-checked:border-secondary has-checked:bg-secondary/10">
+                        <input type="radio" name="payment_type" value="MONTHLY" className="mt-0.5" />
+                        <span>
+                          <span className="block font-medium">Parcelado — 12x {formatCents(monthlyPriceCents)}</span>
+                          <span className="block text-muted-foreground">Total: {formatCents(monthlyTotalCents)}</span>
+                        </span>
+                      </label>
+                      <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-input p-3 text-sm has-checked:border-secondary has-checked:bg-secondary/10">
+                        <input type="radio" name="payment_type" value="ANNUAL" defaultChecked className="mt-0.5" />
+                        <span>
+                          <span className="block font-medium">
+                            À vista — {formatCents(annualPriceCents)} ⭐ mais vantajoso
+                          </span>
+                          <span className="block text-muted-foreground">
+                            Economia de {formatCents(annualSavingsCents)}
+                          </span>
+                        </span>
+                      </label>
+                    </div>
                     <div className="flex flex-col gap-1.5">
                       <Label htmlFor="password">Senha</Label>
                       <Input
@@ -370,7 +443,7 @@ export default async function LandingPage({
                     </div>
 
                     <Button type="submit" variant="secondary" className="mt-2">
-                      ASSINAR O CLUBE NEON — R$ 49,90/mês
+                      ASSINAR O CLUBE NEON
                     </Button>
                   </form>
                 </CardContent>

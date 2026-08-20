@@ -40,6 +40,10 @@ export async function GET(request: NextRequest) {
     });
   }
 
+  const { data: cancelledCount, error: cancellationError } = await supabase.rpc(
+    "process_scheduled_cancellations",
+  );
+
   const { data: levelChangesData, error: levelError } = await supabase.rpc(
     "update_membership_levels",
   );
@@ -99,6 +103,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     processed: results.length,
     results,
+    scheduledCancellationsProcessed: cancelledCount ?? 0,
+    scheduledCancellationsError: cancellationError?.message,
     membershipLevelsError: levelError?.message,
     membershipChanges: levelChanges.filter((c) => c.changed).length,
     membershipNotified: notified,

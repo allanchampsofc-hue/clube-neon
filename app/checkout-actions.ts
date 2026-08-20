@@ -28,6 +28,7 @@ export async function checkout(formData: FormData) {
     cpf: formData.get("cpf") || null,
     password: formData.get("password"),
     confirm_password: formData.get("confirm_password"),
+    payment_type: formData.get("payment_type"),
     terms: formData.get("terms") === "on",
   });
 
@@ -36,7 +37,7 @@ export async function checkout(formData: FormData) {
     redirect(`/?checkout_error=${encodeURIComponent(message)}#checkout`);
   }
 
-  const { name, email, phone, cpf, password } = parsed.data;
+  const { name, email, phone, cpf, password, payment_type } = parsed.data;
   const refCode = String(formData.get("ref") ?? "").trim() || null;
   const supabase = await createClient();
 
@@ -118,9 +119,24 @@ export async function checkout(formData: FormData) {
     );
   }
 
+  let annualPaymentAmountCents: number | null = null;
+  if (payment_type === "ANNUAL") {
+    const { data: config } = await supabase
+      .from("system_config")
+      .select("annual_price_cents")
+      .limit(1)
+      .maybeSingle();
+    annualPaymentAmountCents = config?.annual_price_cents ?? 49900;
+  }
+
   const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .insert({ customer_id: customer.id, plan_id: plan.id })
+    .insert({
+      customer_id: customer.id,
+      plan_id: plan.id,
+      payment_type,
+      annual_payment_amount_cents: annualPaymentAmountCents,
+    })
     .select("id")
     .single();
 
@@ -132,7 +148,12 @@ export async function checkout(formData: FormData) {
     p_action: "SUBSCRIPTION_CREATED",
     p_entity: "subscription",
     p_entity_id: subscription.id,
-    p_after_state: { status: "PENDENTE", plan_id: plan.id },
+    p_after_state: {
+      status: "PENDENTE",
+      plan_id: plan.id,
+      payment_type,
+      annual_payment_amount_cents: annualPaymentAmountCents,
+    },
   });
 
   // Se o projeto Supabase exige confirmação de e-mail, signUp não retorna

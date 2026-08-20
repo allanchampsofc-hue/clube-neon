@@ -22,6 +22,8 @@ export const AUDIT_ACTIONS = [
   "WAITER_AUTH_SUCCESS",
   "WAITER_AUTH_FAILED",
   "WAITER_PIN_CHANGED",
+  "SUBSCRIPTION_CANCELLATION_REQUESTED",
+  "SUBSCRIPTION_CANCELLATION_REVERTED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -50,6 +52,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   WAITER_AUTH_SUCCESS: "PIN da tela do garçom correto",
   WAITER_AUTH_FAILED: "PIN da tela do garçom incorreto",
   WAITER_PIN_CHANGED: "PIN da tela do garçom alterado",
+  SUBSCRIPTION_CANCELLATION_REQUESTED: "Cancelamento de assinatura solicitado",
+  SUBSCRIPTION_CANCELLATION_REVERTED: "Cancelamento de assinatura revertido pela equipe",
 };
 
 export const AUDIT_ENTITIES = [

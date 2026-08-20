@@ -139,6 +139,34 @@ export async function updateCashbackConfig(formData: FormData) {
   redirect("/painel/sistema?success=1");
 }
 
+export async function updatePricingConfig(formData: FormData) {
+  await requireSuperAdmin();
+
+  const monthlyReais = Number(formData.get("monthly_price_reais"));
+  const annualReais = Number(formData.get("annual_price_reais"));
+
+  if (!Number.isFinite(monthlyReais) || monthlyReais <= 0 || !Number.isFinite(annualReais) || annualReais <= 0) {
+    redirect(`/painel/sistema?error=${encodeURIComponent("Valores de preço inválidos.")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error } = await supabase
+    .from("system_config")
+    .update({
+      monthly_price_cents: reaisToCents(monthlyReais),
+      annual_price_cents: reaisToCents(annualReais),
+    })
+    .eq("id", config!.id);
+
+  if (error) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/painel/sistema?success=1");
+}
+
 export async function updateWaiterPin(formData: FormData) {
   const { user } = await requireSuperAdmin();
 
