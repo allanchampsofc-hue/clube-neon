@@ -152,7 +152,7 @@ export default async function LandingPage({
       {/* Seção 1 — Hero */}
       <section className="flex flex-col items-center gap-6 bg-primary px-6 pt-32 pb-20 text-center text-primary-foreground">
         <h1 className="max-w-3xl font-heading text-3xl font-extrabold text-balance sm:text-5xl">
-          🎉 CLUBE NEON – SUA EXPERIÊNCIA GASTRONÔMICA TODO MÊS
+          🎉 CLUBE NEON – CRÉDITO TODO MÊS PRA COMER NA NEON
         </h1>
         <p className="max-w-xl text-lg text-primary-foreground/90">
           12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)}{" "}

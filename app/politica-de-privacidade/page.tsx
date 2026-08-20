@@ -29,9 +29,10 @@ export default function PoliticaDePrivacidadePage() {
 
         <h2 className="font-heading text-lg font-bold">Uso dos dados</h2>
         <p>
-          Usamos seus dados só pra operar sua assinatura, identificar você
-          no balcão e te avisar sobre sua conta. Não vendemos nem
-          compartilhamos seus dados com terceiros pra fins de marketing.
+          Usamos seus dados só pra operar sua participação no Clube Neon,
+          identificar você no balcão e te avisar sobre sua conta. Não
+          vendemos nem compartilhamos seus dados com terceiros pra fins de
+          marketing.
         </p>
 
         <h2 className="font-heading text-lg font-bold">Seus direitos</h2>

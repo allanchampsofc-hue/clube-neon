@@ -40,10 +40,7 @@ export default function TermosPage() {
           iniciando-se na data de aniversário mensal da contratação e
           encerrando-se no início do ciclo seguinte. Créditos não
           utilizados no período de validade expiram automaticamente, sem
-          direito a compensação, transferência ou reembolso. A exceção é o
-          último mês do contrato: o saldo remanescente do 12º mês fica
-          disponível por mais 2 (dois) meses, período de carência em que
-          nenhum crédito novo é liberado.
+          direito a compensação, transferência ou reembolso.
         </p>
 
         <h2 className="font-heading text-lg font-bold">
@@ -55,8 +52,7 @@ export default function TermosPage() {
           serão devidas as parcelas referentes aos 3 (três) meses
           subsequentes à data do pedido de cancelamento, período durante o
           qual o participante manterá acesso ao crédito mensal. Após esse
-          prazo, a participação no Clube Neon será encerrada, sem novas
-          cobranças e sem liberação de novos créditos mensais.
+          prazo, a participação será encerrada sem novas cobranças.
         </p>
 
         <h2 className="font-heading text-lg font-bold">
@@ -64,11 +60,19 @@ export default function TermosPage() {
         </h2>
         <p>
           O participante que optar pelo pagamento à vista (R$ 499,00)
-          poderá solicitar o cancelamento a qualquer momento. Como o valor
-          já foi quitado integralmente, não há parcelas futuras a cobrar
-          nem reembolso do valor pago. O participante mantém acesso ao
-          crédito mensal normalmente até o fim dos 12 meses contratados,
-          seguido do período de carência de 2 meses descrito acima.
+          poderá solicitar o encerramento de sua participação a qualquer
+          momento, sem novas cobranças. Neste caso, o participante manterá
+          acesso ao crédito mensal normalmente até o término dos 12 meses
+          contratados. Não haverá reembolso, total ou parcial, do valor
+          pago à vista.
+        </p>
+
+        <h2 className="font-heading text-lg font-bold">Carência</h2>
+        <p>
+          Ao término do período contratado de 12 meses, o participante
+          terá 2 (dois) meses adicionais para utilizar o saldo
+          remanescente do último ciclo mensal, se houver. Após esse prazo,
+          o saldo expira e a participação é encerrada definitivamente.
         </p>
 
         <h2 className="font-heading text-lg font-bold">Pagamento</h2>

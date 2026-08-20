@@ -184,8 +184,8 @@ export default async function MinhaContaPage({
       {pending ? (
         <Card className="max-w-md border-secondary bg-secondary/10">
           <CardContent className="pt-6 text-sm text-primary">
-            Sua assinatura está sendo processada. Em breve você receberá a
-            confirmação.
+            Recebemos seu pedido, {customerFirstName}. Vamos confirmar e
+            liberar seu crédito em breve.
           </CardContent>
         </Card>
       ) : null}
