@@ -149,18 +149,36 @@ export async function addConsecutiveCycles(
   }
 }
 
-/** Ordem importa: FKs "restrict" em customer_id exigem apagar o ledger antes. */
+/**
+ * Ordem importa: FKs "restrict" em customer_id exigem apagar o ledger antes,
+ * e cashback/satisfaction/credit_use_requests referenciam credit_transaction_id
+ * (também restrict/no-action), então têm que sair antes de credit_transactions.
+ *
+ * Cada delete checa `error` explicitamente — sem isso, uma falha de FK fica
+ * muda (a Promise resolve normalmente com `data: null, error: {...}`, não
+ * lança exceção) e o teste reporta sucesso mesmo deixando o customer épico
+ * pra trás. Foi exatamente isso que aconteceu antes desta correção: 20
+ * clientes de teste (deste helper, sem o passo de credit_use_requests)
+ * acumularam direto no banco de produção sem nenhum teste nunca falhar.
+ */
 export async function cleanupTestCustomer(customerId: string) {
   const admin = createAdminClient();
-  await admin.from("referrals").delete().eq("referrer_customer_id", customerId);
-  await admin.from("referrals").delete().eq("referred_customer_id", customerId);
-  await admin.from("birthday_notifications").delete().eq("customer_id", customerId);
-  await admin.from("membership_history").delete().eq("customer_id", customerId);
-  await admin.from("cashback_transactions").delete().eq("customer_id", customerId);
-  await admin.from("satisfaction_surveys").delete().eq("customer_id", customerId);
-  await admin.from("credit_transactions").delete().eq("customer_id", customerId);
-  await admin.from("subscriptions").delete().eq("customer_id", customerId);
-  await admin.from("customers").delete().eq("id", customerId);
+  const steps: Array<[string, Promise<{ error: { message: string } | null }>]> = [
+    ["referrals(referrer)", admin.from("referrals").delete().eq("referrer_customer_id", customerId)],
+    ["referrals(referred)", admin.from("referrals").delete().eq("referred_customer_id", customerId)],
+    ["birthday_notifications", admin.from("birthday_notifications").delete().eq("customer_id", customerId)],
+    ["membership_history", admin.from("membership_history").delete().eq("customer_id", customerId)],
+    ["cashback_transactions", admin.from("cashback_transactions").delete().eq("customer_id", customerId)],
+    ["satisfaction_surveys", admin.from("satisfaction_surveys").delete().eq("customer_id", customerId)],
+    ["credit_use_requests", admin.from("credit_use_requests").delete().eq("customer_id", customerId)],
+    ["credit_transactions", admin.from("credit_transactions").delete().eq("customer_id", customerId)],
+    ["subscriptions", admin.from("subscriptions").delete().eq("customer_id", customerId)],
+    ["customers", admin.from("customers").delete().eq("id", customerId)],
+  ];
+  for (const [label, promise] of steps) {
+    const { error } = await promise;
+    if (error) throw new Error(`cleanupTestCustomer falhou em ${label}: ${error.message}`);
+  }
 }
 
 export async function cleanupTestAuthUser(userId: string) {
