@@ -20,6 +20,7 @@ function checkoutFormData(overrides: Record<string, string> = {}) {
     cpf: "",
     password: "SenhaForte123",
     confirm_password: "SenhaForte123",
+    payment_type: "ANNUAL",
     terms: "on",
   };
   for (const [key, value] of Object.entries({ ...defaults, ...overrides })) {
@@ -73,6 +74,66 @@ describeIfEnv("checkout (integração)", () => {
       .eq("customer_id", customer.id)
       .single();
     expect(subscription.status).toBe("PENDENTE");
+  });
+
+  it("com pagamento à vista, grava annual_payment_amount_cents a partir de system_config", async () => {
+    const email = testEmail("avista");
+    createdEmails.push(email);
+    const form = checkoutFormData({ email, payment_type: "ANNUAL" });
+
+    await captureRedirect(() => checkout(form));
+
+    const admin = createAdminClient();
+    const { data: config } = await admin
+      .from("system_config")
+      .select("annual_price_cents")
+      .limit(1)
+      .single();
+    const { data: customer } = await admin
+      .from("customers")
+      .select("id")
+      .eq("email", email)
+      .single();
+    const { data: subscription } = await admin
+      .from("subscriptions")
+      .select("payment_type, annual_payment_amount_cents")
+      .eq("customer_id", customer.id)
+      .single();
+
+    expect(subscription.payment_type).toBe("ANNUAL");
+    expect(subscription.annual_payment_amount_cents).toBe(config!.annual_price_cents);
+  });
+
+  it("com pagamento parcelado, não grava annual_payment_amount_cents", async () => {
+    const email = testEmail("parcelado");
+    createdEmails.push(email);
+    const form = checkoutFormData({ email, payment_type: "MONTHLY" });
+
+    await captureRedirect(() => checkout(form));
+
+    const admin = createAdminClient();
+    const { data: customer } = await admin
+      .from("customers")
+      .select("id")
+      .eq("email", email)
+      .single();
+    const { data: subscription } = await admin
+      .from("subscriptions")
+      .select("payment_type, annual_payment_amount_cents")
+      .eq("customer_id", customer.id)
+      .single();
+
+    expect(subscription.payment_type).toBe("MONTHLY");
+    expect(subscription.annual_payment_amount_cents).toBeNull();
+  });
+
+  it("sem escolher forma de pagamento retorna erro de validação", async () => {
+    const form = checkoutFormData();
+    form.delete("payment_type");
+    const url = await captureRedirect(() => checkout(form));
+
+    expect(url).toContain("checkout_error=");
+    expect(decodeURIComponent(url)).toContain("forma de pagamento");
   });
 
   it("com e-mail já existente retorna erro de duplicidade", async () => {
