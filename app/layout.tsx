@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   title: "Clube Neon",
   description:
     "Clube Neon — assinatura da Neon Pizzaria. R$ 49,90/mês por R$ 99,00 de crédito para usar no cardápio todo mês.",
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
