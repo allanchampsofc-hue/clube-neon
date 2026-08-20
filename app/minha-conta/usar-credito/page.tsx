@@ -39,7 +39,10 @@ export default async function UsarCreditoPage() {
           Gere um QR Code e mostre pro garçom pra debitar na hora.
         </p>
       </div>
-      <UsarCreditoFlow balanceCents={balanceCents} />
+      <UsarCreditoFlow
+        balanceCents={balanceCents}
+        customerFirstName={customer.name.split(" ")[0]}
+      />
     </div>
   );
 }

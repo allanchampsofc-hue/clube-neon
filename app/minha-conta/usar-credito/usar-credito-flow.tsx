@@ -71,7 +71,13 @@ function centsFromInput(raw: string): number | null {
   return Math.round(value * 100);
 }
 
-export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
+export function UsarCreditoFlow({
+  balanceCents,
+  customerFirstName,
+}: {
+  balanceCents: number;
+  customerFirstName?: string;
+}) {
   const [step, setStep] = useState<Step>({ name: "amount" });
   const [amountInput, setAmountInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -200,7 +206,7 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
         <CardHeader>
           <CardTitle>Quanto você quer usar?</CardTitle>
           <CardDescription>
-            Saldo disponível: {formatCents(balanceCents)}
+            Crédito disponível: {formatCents(balanceCents)}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
@@ -306,17 +312,18 @@ export function UsarCreditoFlow({ balanceCents }: { balanceCents: number }) {
   return (
     <Card className="max-w-md border-secondary bg-secondary/10">
       <CardHeader>
-        <CardTitle>✅ {formatCents(step.amountCents)} utilizados com sucesso!</CardTitle>
-        {step.balanceAfterCents !== null ? (
-          <CardDescription>
-            Saldo restante: {formatCents(step.balanceAfterCents)}
-          </CardDescription>
-        ) : null}
+        <CardTitle>
+          ✅ Pronto{customerFirstName ? `, ${customerFirstName}` : ""}!
+        </CardTitle>
+        <CardDescription>
+          {formatCents(step.amountCents)} descontados do seu crédito.
+          {step.balanceAfterCents !== null
+            ? ` Ficaram ${formatCents(step.balanceAfterCents)}.`
+            : ""}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <p className="text-sm text-primary">
-          Bom apetite! Aproveite sua experiência. 🍕
-        </p>
+        <p className="text-sm text-primary">Bom apetite! 🍕</p>
         <a href="/minha-conta" className="text-sm font-medium text-primary underline-offset-4 hover:underline">
           Voltar para minha conta
         </a>

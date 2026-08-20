@@ -15,8 +15,10 @@ import { Button } from "@/components/ui/button";
 import { requestCancellation } from "./actions";
 
 export function CancelSubscriptionDialog({
+  paymentType,
   monthlyPriceCents,
 }: {
+  paymentType: "MONTHLY" | "ANNUAL";
   monthlyPriceCents: number;
 }) {
   const penaltyCents = monthlyPriceCents * 3;
@@ -34,9 +36,9 @@ export function CancelSubscriptionDialog({
         <DialogHeader>
           <DialogTitle>Cancelar assinatura</DialogTitle>
           <DialogDescription>
-            Ao cancelar, você ainda será cobrado pelos próximos 3 meses (
-            {penaltyReais}) e terá acesso ao crédito nesses meses. Após esse
-            período, sua assinatura encerra.
+            {paymentType === "ANNUAL"
+              ? `Como seu plano foi contratado à vista, não há novas cobranças a cancelar. Ao confirmar, você mantém acesso ao seu crédito mensal normalmente até o fim dos 12 meses contratados. Não há reembolso do valor já pago.`
+              : `Ao confirmar o cancelamento, você será cobrado pelos próximos 3 meses (${penaltyReais}) e continuará tendo acesso ao seu crédito mensal nesses períodos. Após esse prazo, sua participação no Clube Neon será encerrada sem novas cobranças.`}
           </DialogDescription>
         </DialogHeader>
         <form action={requestCancellation} className="flex flex-col gap-3">

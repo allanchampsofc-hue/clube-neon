@@ -9,30 +9,30 @@ import {
 const FAQ = [
   {
     question: "Quanto de crédito recebo?",
-    answer: "R$ 99,00 por mês.",
+    answer: "R$ 99,00 em crédito de consumo por mês, por 12 meses.",
   },
   {
-    question: "O crédito acumula?",
+    question: "O crédito acumula pro mês seguinte?",
     answer:
-      "Não. O crédito de cada mês precisa ser usado no próprio mês. Só o saldo do último mês (mês 12) fica disponível por mais 2 meses, no período de carência.",
+      "Não. O crédito é válido no mês de referência. Só o saldo do último mês (mês 12) fica disponível por mais 2 meses, no período de carência.",
   },
   {
     question: "Posso usar tudo de uma vez?",
-    answer: "Sim, dentro do saldo disponível do mês.",
+    answer: "Sim, dentro do crédito disponível do mês.",
   },
   {
     question: "Posso pedir qualquer coisa?",
-    answer: "Sim, qualquer item do cardápio até o limite do crédito disponível.",
+    answer: "Sim, qualquer item do cardápio até o limite disponível.",
   },
   {
     question: "O que acontece se eu não usar?",
     answer:
-      "O crédito não usado expira no fim do ciclo mensal e não é estornado.",
+      "O crédito não utilizado no mês não é transferido para o mês seguinte.",
   },
   {
     question: "Como uso meu crédito?",
     answer:
-      "Na Neon, informe ao atendente que você é membro do Clube Neon. O saldo é debitado digitalmente na hora.",
+      "Na Neon, informe ao atendente que você é membro do Clube Neon. O crédito é debitado digitalmente na hora.",
   },
 ];
 

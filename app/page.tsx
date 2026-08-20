@@ -57,7 +57,7 @@ const FAQ = [
   {
     question: "O crédito acumula se eu não usar?",
     answer:
-      "Não. O crédito de cada mês é válido apenas naquele mês. Se não usar, expira no início do próximo ciclo. A exceção é o último mês do plano: o saldo restante fica disponível por mais 2 meses.",
+      "Não. O crédito de cada mês é válido apenas naquele mês — se não usar, não passa pro próximo ciclo. A exceção é o último mês do plano: o saldo restante fica disponível por mais 2 meses.",
   },
   {
     question: "Posso cancelar antes dos 12 meses?",
@@ -279,8 +279,8 @@ export default async function LandingPage({
               Use em qualquer item do cardápio, dentro do mês de referência.
             </p>
             <p className="text-xs text-muted-foreground">
-              O crédito não utilizado no mês expira no início do próximo
-              ciclo e não é transferido.
+              O crédito não utilizado no mês não é transferido pro próximo
+              ciclo.
             </p>
           </div>
         </div>
@@ -333,10 +333,10 @@ export default async function LandingPage({
               <p>{formatCents(monthlyCreditCents)} de crédito todo mês</p>
               <p className="mt-2 text-primary-foreground/70">
                 Você está contratando o Clube Neon — plano anual de 12
-                meses. Você receberá {formatCents(monthlyCreditCents)} de
-                crédito por mês, válido apenas no mês de referência — o
-                crédito não utilizado expira e não é transferido para o mês
-                seguinte.
+                meses. Você receberá {formatCents(monthlyCreditCents)} em
+                crédito de consumo por mês, válido apenas no mês de
+                referência — o crédito não utilizado não é transferido
+                para o mês seguinte.
               </p>
             </div>
           </div>

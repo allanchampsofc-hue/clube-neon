@@ -1,7 +1,7 @@
 import { requireCustomer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCpf } from "@/lib/cpf";
-import { formatDate } from "@/lib/dates";
+import { formatDate, addMonths } from "@/lib/dates";
 import {
   Card,
   CardContent,
@@ -34,13 +34,27 @@ export default async function MeuPerfilPage({
   } = await searchParams;
   const supabase = await createClient();
 
-  const { data: subscription } = await supabase
+  const { data: subscriptionData } = await supabase
     .from("subscriptions")
-    .select("status, cancellation_effective_at")
+    .select(
+      "status, payment_type, started_at, cancellation_requested_at, cancellation_effective_at, plan:plans(duration_months)",
+    )
     .eq("customer_id", customerBasic.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  const subscription = subscriptionData as unknown as {
+    status: string;
+    payment_type: "MONTHLY" | "ANNUAL";
+    started_at: string | null;
+    cancellation_requested_at: string | null;
+    cancellation_effective_at: string | null;
+    plan: { duration_months: number } | null;
+  } | null;
+  const naturalContractEnd =
+    subscription?.started_at && subscription.plan
+      ? addMonths(subscription.started_at, subscription.plan.duration_months)
+      : null;
 
   const { data: config } = await supabase
     .from("system_config")
@@ -193,16 +207,20 @@ export default async function MeuPerfilPage({
             ) : null}
             {cancelSuccess ? (
               <p className="text-sm text-primary">
-                Cancelamento agendado com sucesso.
+                Cancelamento confirmado, {customer?.name}.
               </p>
             ) : null}
-            {subscription.cancellation_effective_at ? (
+            {subscription.cancellation_requested_at ? (
               <p className="text-sm text-muted-foreground">
-                Cancelamento agendado — sua assinatura encerra em{" "}
-                {formatDate(subscription.cancellation_effective_at)}.
+                {subscription.payment_type === "ANNUAL"
+                  ? `Cancelamento registrado. Seu crédito mensal segue normalmente até ${formatDate(naturalContractEnd)}. Nenhum valor será devolvido.`
+                  : `Cancelamento agendado — sua participação encerra em ${formatDate(subscription.cancellation_effective_at)}.`}
               </p>
             ) : (
-              <CancelSubscriptionDialog monthlyPriceCents={monthlyPriceCents} />
+              <CancelSubscriptionDialog
+                paymentType={subscription.payment_type}
+                monthlyPriceCents={monthlyPriceCents}
+              />
             )}
           </CardContent>
         </Card>

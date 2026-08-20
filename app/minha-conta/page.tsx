@@ -28,6 +28,7 @@ type SubscriptionRow = {
   started_at: string | null;
   current_period_end: string | null;
   payment_type: "MONTHLY" | "ANNUAL";
+  cancellation_requested_at: string | null;
   cancellation_effective_at: string | null;
   plan: {
     name: string;
@@ -49,13 +50,14 @@ export default async function MinhaContaPage({
   searchParams,
 }: PageProps<"/minha-conta">) {
   const { customer } = await requireCustomer();
+  const customerFirstName = customer.name.split(" ")[0];
   const { pending } = await searchParams;
   const supabase = await createClient();
 
   const { data: subscriptionData } = await supabase
     .from("subscriptions")
     .select(
-      "id, status, started_at, current_period_end, payment_type, cancellation_effective_at, plan:plans(name, price_cents, monthly_credit_cents, duration_months, grace_period_months)",
+      "id, status, started_at, current_period_end, payment_type, cancellation_requested_at, cancellation_effective_at, plan:plans(name, price_cents, monthly_credit_cents, duration_months, grace_period_months)",
     )
     .eq("customer_id", customer.id)
     .order("created_at", { ascending: false })
@@ -209,7 +211,7 @@ export default async function MinhaContaPage({
       <div>
         <div className="flex items-center gap-2">
           <h1 className="font-heading text-2xl font-bold text-primary">
-            Olá, {customer.name}! 👋
+            Olá, {customerFirstName}! 👋
           </h1>
           <MembershipBadge level={membershipLevel} />
         </div>
@@ -267,15 +269,15 @@ export default async function MinhaContaPage({
               </>
             ) : null}
             <p className="text-xs text-muted-foreground">
-              ⚠️ Não acumula para o próximo mês — o crédito não utilizado
-              expira no fim do ciclo.
+              ⚠️ Crédito válido só neste mês — não é transferido pro
+              próximo.
             </p>
             {showExpiryUrgency ? (
               <p className="rounded-md bg-destructive/10 p-2 text-sm font-medium text-destructive">
-                ⚠️ Seu crédito de {formatCents(balanceCents)} expira em{" "}
-                {daysUntilExpiry} {daysUntilExpiry === 1 ? "dia" : "dias"}!
-                Não deixe expirar — visite a Neon antes de{" "}
-                {formatDate(cycle!.period_end)}.
+                Ei, {customerFirstName} — ainda tem {formatCents(balanceCents)}{" "}
+                sobrando e o mês acaba em {daysUntilExpiry}{" "}
+                {daysUntilExpiry === 1 ? "dia" : "dias"}. Que tal uma
+                visita?
               </p>
             ) : null}
             {balanceCents > 0 ? (
@@ -323,17 +325,16 @@ export default async function MinhaContaPage({
         </Card>
       ) : null}
 
-      {subscription?.cancellation_effective_at ? (
+      {subscription?.cancellation_requested_at ? (
         <Card className="max-w-md border-destructive/40 bg-destructive/5">
           <CardContent className="pt-6 text-sm">
             <p className="font-medium text-destructive">
-              Cancelamento agendado
+              Cancelamento registrado
             </p>
             <p className="mt-1 text-muted-foreground">
-              Sua assinatura encerra em{" "}
-              {formatDate(subscription.cancellation_effective_at)}. Até lá,
-              você continua recebendo e podendo usar o crédito mensal
-              normalmente.
+              {subscription.payment_type === "ANNUAL"
+                ? `Como você pagou à vista, seu crédito mensal segue normalmente até ${formatDate(contractEnd)}. Nenhum valor será devolvido.`
+                : `Sua participação encerra em ${formatDate(subscription.cancellation_effective_at)}. Até lá, você continua recebendo e podendo usar o crédito mensal.`}
             </p>
           </CardContent>
         </Card>

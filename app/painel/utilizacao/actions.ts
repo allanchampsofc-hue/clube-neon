@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth";
 import { reaisToCents, formatCents } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 import { verifyQrToken } from "@/lib/qr-token";
 
@@ -103,11 +104,16 @@ export async function confirmCreditUseRequest(requestId: string, token: string) 
     );
   }
 
-  const request = data as { customer_id: string; amount_cents: number; credit_transaction_id: string };
+  const request = data as {
+    customer_id: string;
+    wallet_id: string;
+    amount_cents: number;
+    credit_transaction_id: string;
+  };
 
   const { data: customer } = await supabase
     .from("customers")
-    .select("phone")
+    .select("name, phone")
     .eq("id", request.customer_id)
     .maybeSingle();
 
@@ -117,8 +123,21 @@ export async function confirmCreditUseRequest(requestId: string, token: string) 
     .eq("id", request.credit_transaction_id)
     .maybeSingle();
 
+  const { data: wallet } = await supabase
+    .from("credit_wallets")
+    .select("cycle:subscription_cycles(period_end)")
+    .eq("id", request.wallet_id)
+    .maybeSingle();
+  const periodEnd = (wallet as unknown as { cycle: { period_end: string } | null } | null)?.cycle
+    ?.period_end;
+
   if (customer?.phone) {
-    const message = `✅ ${formatCents(request.amount_cents)} debitados do seu Clube Neon. Saldo restante: ${formatCents(transaction?.balance_after_cents ?? 0)}. Bom apetite! 🍕 — Clube Neon`;
+    const firstName = (customer.name ?? "").split(" ")[0] || customer.name;
+    const message = `Pronto, ${firstName}. ${formatCents(request.amount_cents)} descontados do seu crédito.${
+      periodEnd
+        ? ` Ficaram ${formatCents(transaction?.balance_after_cents ?? 0)} para usar até ${formatDate(periodEnd)}.`
+        : ` Ficaram ${formatCents(transaction?.balance_after_cents ?? 0)}.`
+    } Bom apetite! 🍕 — Clube Neon`;
     try {
       await sendWhatsAppMessage(customer.phone, message);
     } catch (whatsappError) {

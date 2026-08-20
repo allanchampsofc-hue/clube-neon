@@ -142,4 +142,34 @@ describeIfEnv("Cancelamento antecipado de assinatura (integração)", () => {
     const { error } = await supabase.rpc("process_scheduled_cancellations");
     expect(error).not.toBeNull();
   });
+
+  it("cancelamento à vista: sem multa, sem data efetiva — segue até o fim natural do contrato", async () => {
+    await admin.from("subscriptions").update({ payment_type: "ANNUAL" }).eq("id", subscriptionId);
+
+    const url = await captureRedirect(() => requestCancellation(new FormData()));
+    expect(url).toContain("cancel_success=1");
+
+    const { data: row } = await admin
+      .from("subscriptions")
+      .select("status, payment_type, cancellation_requested_at, cancellation_effective_at")
+      .eq("id", subscriptionId)
+      .single();
+    expect(row?.status).toBe("ATIVA");
+    expect(row?.cancellation_requested_at).not.toBeNull();
+    expect(row?.cancellation_effective_at).toBeNull();
+  });
+
+  it("process_scheduled_cancellations ignora cancelamento à vista (sem data efetiva)", async () => {
+    await admin.from("subscriptions").update({ payment_type: "ANNUAL" }).eq("id", subscriptionId);
+    await captureRedirect(() => requestCancellation(new FormData()));
+
+    await admin.rpc("process_scheduled_cancellations");
+
+    const { data: row } = await admin
+      .from("subscriptions")
+      .select("status")
+      .eq("id", subscriptionId)
+      .single();
+    expect(row?.status).toBe("ATIVA");
+  });
 });

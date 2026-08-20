@@ -37,7 +37,7 @@ export default async function PainelAssinaturasPage({
   let query = supabase
     .from("subscriptions")
     .select(
-      "id, status, started_at, current_period_end, cancellation_effective_at, customer:customers(id, name, member_number), plan:plans(name, price_cents, duration_months)",
+      "id, status, started_at, current_period_end, payment_type, cancellation_requested_at, cancellation_effective_at, customer:customers(id, name, member_number), plan:plans(name, price_cents, duration_months)",
     )
     .order("created_at", { ascending: false })
     .limit(50);
@@ -55,6 +55,8 @@ export default async function PainelAssinaturasPage({
     status: SubscriptionStatus;
     started_at: string | null;
     current_period_end: string | null;
+    payment_type: "MONTHLY" | "ANNUAL";
+    cancellation_requested_at: string | null;
     cancellation_effective_at: string | null;
     customer: { id: string; name: string; member_number: string } | null;
     plan: { name: string; price_cents: number; duration_months: number } | null;
@@ -147,12 +149,16 @@ export default async function PainelAssinaturasPage({
                     {subscription.plan ? formatCents(subscription.plan.price_cents) : "—"}
                   </td>
                   <td className="px-3 py-2">
-                    {subscription.cancellation_effective_at ? (
+                    {subscription.cancellation_requested_at ? (
                       <span className="text-destructive">
-                        CANCELAMENTO AGENDADO
+                        {subscription.payment_type === "ANNUAL"
+                          ? "CANCELAMENTO REGISTRADO"
+                          : "CANCELAMENTO AGENDADO"}
                         <br />
                         <span className="text-xs text-muted-foreground">
-                          efetivo em {formatDate(subscription.cancellation_effective_at)}
+                          {subscription.payment_type === "ANNUAL"
+                            ? `não renova — segue até ${formatDate(contractEnd)}`
+                            : `efetivo em ${formatDate(subscription.cancellation_effective_at)}`}
                         </span>
                       </span>
                     ) : (
@@ -206,7 +212,7 @@ export default async function PainelAssinaturasPage({
                           </Button>
                         </form>
                       ) : null}
-                      {subscription.cancellation_effective_at ? (
+                      {subscription.cancellation_requested_at ? (
                         <form
                           action={revertCancellation.bind(
                             null,

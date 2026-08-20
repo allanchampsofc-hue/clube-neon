@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getRequestIp } from "@/lib/request-ip";
 import { formatCents } from "@/lib/money";
+import { formatDate } from "@/lib/dates";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
 
 const RATE_LIMIT_MAX_ATTEMPTS = 10;
@@ -160,8 +161,23 @@ export async function POST(request: NextRequest) {
       .eq("id", result.customer_id)
       .maybeSingle();
 
+    const { data: wallet } = await supabase
+      .from("credit_wallets")
+      .select("cycle:subscription_cycles(period_end)")
+      .eq("customer_id", result.customer_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const periodEnd = (wallet as unknown as { cycle: { period_end: string } | null } | null)?.cycle
+      ?.period_end;
+
     if (customer?.phone) {
-      const message = `✅ ${formatCents(result.amount_cents)} debitados do seu Clube Neon. Saldo restante: ${formatCents(result.balance_after_cents)}. Bom apetite! 🍕 — Clube Neon`;
+      const firstName = (result.customer_name ?? "").split(" ")[0] || result.customer_name;
+      const message = `Pronto, ${firstName}. ${formatCents(result.amount_cents)} descontados do seu crédito.${
+        periodEnd
+          ? ` Ficaram ${formatCents(result.balance_after_cents)} para usar até ${formatDate(periodEnd)}.`
+          : ` Ficaram ${formatCents(result.balance_after_cents)}.`
+      } Bom apetite! 🍕 — Clube Neon`;
       try {
         await sendWhatsAppMessage(customer.phone, message);
       } catch (whatsappError) {
