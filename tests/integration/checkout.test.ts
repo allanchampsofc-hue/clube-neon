@@ -21,6 +21,7 @@ function checkoutFormData(overrides: Record<string, string> = {}) {
     password: "SenhaForte123",
     confirm_password: "SenhaForte123",
     payment_type: "ANNUAL",
+    plan_type: "ESSENCIAL",
     terms: "on",
   };
   for (const [key, value] of Object.entries({ ...defaults, ...overrides })) {
@@ -76,18 +77,19 @@ describeIfEnv("checkout (integração)", () => {
     expect(subscription.status).toBe("PENDENTE");
   });
 
-  it("com pagamento à vista, grava annual_payment_amount_cents a partir de system_config", async () => {
+  it("com pagamento à vista, grava annual_payment_amount_cents a partir do plano", async () => {
     const email = testEmail("avista");
     createdEmails.push(email);
-    const form = checkoutFormData({ email, payment_type: "ANNUAL" });
+    const form = checkoutFormData({ email, payment_type: "ANNUAL", plan_type: "ESSENCIAL" });
 
     await captureRedirect(() => checkout(form));
 
     const admin = createAdminClient();
-    const { data: config } = await admin
-      .from("system_config")
+    const { data: plan } = await admin
+      .from("plans")
       .select("annual_price_cents")
-      .limit(1)
+      .eq("plan_type", "ESSENCIAL")
+      .eq("active", true)
       .single();
     const { data: customer } = await admin
       .from("customers")
@@ -101,7 +103,7 @@ describeIfEnv("checkout (integração)", () => {
       .single();
 
     expect(subscription.payment_type).toBe("ANNUAL");
-    expect(subscription.annual_payment_amount_cents).toBe(config!.annual_price_cents);
+    expect(subscription.annual_payment_amount_cents).toBe(plan!.annual_price_cents);
   });
 
   it("com pagamento parcelado, não grava annual_payment_amount_cents", async () => {
