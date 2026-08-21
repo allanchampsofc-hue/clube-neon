@@ -74,15 +74,26 @@ describeIfEnv("Notificações WhatsApp de ciclo (integração)", () => {
       balanceCents = activated.balanceCents;
 
       // Força o ciclo 1 a já ter terminado, pra virar elegível pro rollover.
+      // period_end tem que ficar > period_start (check constraint) — usa
+      // period_start + 1ms em vez de um timestamp fixo no passado, e espera
+      // esse instante passar de verdade antes de rodar o cron.
+      const { data: cycle1 } = await admin
+        .from("subscription_cycles")
+        .select("period_start")
+        .eq("subscription_id", subscriptionId)
+        .eq("cycle_number", 1)
+        .single();
+      const forcedPeriodEnd = new Date(new Date(cycle1!.period_start).getTime() + 1);
       await admin
         .from("subscription_cycles")
-        .update({ period_end: new Date(Date.now() - 1000).toISOString() })
+        .update({ period_end: forcedPeriodEnd.toISOString() })
         .eq("subscription_id", subscriptionId)
         .eq("cycle_number", 1);
       await admin
         .from("subscriptions")
-        .update({ current_period_end: new Date(Date.now() - 1000).toISOString() })
+        .update({ current_period_end: forcedPeriodEnd.toISOString() })
         .eq("id", subscriptionId);
+      await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
     afterEach(async () => {
