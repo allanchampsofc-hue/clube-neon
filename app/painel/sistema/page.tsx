@@ -19,7 +19,6 @@ import {
   updateCashbackConfig,
   updateSurveyConfig,
   updateWaiterPin,
-  updatePricingConfig,
   updateCycleNotificationsConfig,
 } from "./actions";
 
@@ -34,16 +33,14 @@ export default async function PainelSistemaPage({
   const { error, success } = await searchParams;
 
   const supabase = await createClient();
-  const { data: plan } = await supabase
+  const { data: plans } = await supabase
     .from("plans")
     .select("*")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .order("created_at", { ascending: true });
   const { data: config } = await supabase
     .from("system_config")
     .select(
-      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin, monthly_price_cents, annual_price_cents, notify_credit_released, credit_released_message, notify_plan_ending, plan_ending_message",
+      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin, notify_credit_released, credit_released_message, notify_plan_ending, plan_ending_message",
     )
     .limit(1)
     .maybeSingle();
@@ -60,110 +57,125 @@ export default async function PainelSistemaPage({
         </p>
       </div>
 
-      {!plan ? (
+      {!plans || plans.length === 0 ? (
         <p className="text-sm text-destructive">
           Nenhum plano cadastrado ainda. Rode a migration
           supabase/migrations/00002_seed_plan.sql no projeto Supabase.
         </p>
       ) : (
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Plano</CardTitle>
-            <CardDescription>
-              Único plano do Clube Neon hoje — os valores abaixo controlam
-              cobrança e crédito mensal de todo mundo.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form
-              action={updatePlan.bind(null, plan.id)}
-              className="flex flex-col gap-4"
-            >
-              {error ? (
-                <p className="text-sm text-destructive">{error}</p>
-              ) : null}
-              {success ? (
-                <p className="text-sm text-primary">
-                  Plano atualizado com sucesso.
-                </p>
-              ) : null}
+        plans.map((plan) => (
+          <Card key={plan.id} className="max-w-md">
+            <CardHeader>
+              <CardTitle>{plan.name}</CardTitle>
+              <CardDescription>
+                Valores abaixo controlam cobrança e crédito mensal de quem
+                está nesse plano.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form
+                action={updatePlan.bind(null, plan.id)}
+                className="flex flex-col gap-4"
+              >
+                {error ? (
+                  <p className="text-sm text-destructive">{error}</p>
+                ) : null}
+                {success ? (
+                  <p className="text-sm text-primary">
+                    Plano atualizado com sucesso.
+                  </p>
+                ) : null}
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="name">Nome</Label>
-                <Input id="name" name="name" defaultValue={plan.name} required />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`name_${plan.id}`}>Nome</Label>
+                  <Input id={`name_${plan.id}`} name="name" defaultValue={plan.name} required />
+                </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="price_reais">Valor mensal (R$)</Label>
-                <Input
-                  id="price_reais"
-                  name="price_reais"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={centsToReais(plan.price_cents)}
-                  required
-                />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`price_reais_${plan.id}`}>Parcela mensal (R$)</Label>
+                  <Input
+                    id={`price_reais_${plan.id}`}
+                    name="price_reais"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={centsToReais(plan.price_cents)}
+                    required
+                  />
+                </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="monthly_credit_reais">
-                  Crédito mensal (R$)
-                </Label>
-                <Input
-                  id="monthly_credit_reais"
-                  name="monthly_credit_reais"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={centsToReais(plan.monthly_credit_cents)}
-                  required
-                />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`annual_price_reais_${plan.id}`}>Preço à vista (R$)</Label>
+                  <Input
+                    id={`annual_price_reais_${plan.id}`}
+                    name="annual_price_reais"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={centsToReais(plan.annual_price_cents)}
+                    required
+                  />
+                </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="duration_months">Duração (meses)</Label>
-                <Input
-                  id="duration_months"
-                  name="duration_months"
-                  type="number"
-                  step="1"
-                  min="1"
-                  defaultValue={plan.duration_months}
-                  required
-                />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`monthly_credit_reais_${plan.id}`}>
+                    Crédito mensal (R$)
+                  </Label>
+                  <Input
+                    id={`monthly_credit_reais_${plan.id}`}
+                    name="monthly_credit_reais"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    defaultValue={centsToReais(plan.monthly_credit_cents)}
+                    required
+                  />
+                </div>
 
-              <div className="flex flex-col gap-1.5">
-                <Label htmlFor="grace_period_months">
-                  Carência ao final do contrato (meses)
-                </Label>
-                <Input
-                  id="grace_period_months"
-                  name="grace_period_months"
-                  type="number"
-                  step="1"
-                  min="0"
-                  defaultValue={plan.grace_period_months}
-                  required
-                />
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`duration_months_${plan.id}`}>Duração (meses)</Label>
+                  <Input
+                    id={`duration_months_${plan.id}`}
+                    name="duration_months"
+                    type="number"
+                    step="1"
+                    min="1"
+                    defaultValue={plan.duration_months}
+                    required
+                  />
+                </div>
 
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="active"
-                  name="active"
-                  defaultChecked={plan.active}
-                />
-                <Label htmlFor="active">Plano ativo</Label>
-              </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor={`grace_period_months_${plan.id}`}>
+                    Carência ao final do contrato (meses)
+                  </Label>
+                  <Input
+                    id={`grace_period_months_${plan.id}`}
+                    name="grace_period_months"
+                    type="number"
+                    step="1"
+                    min="0"
+                    defaultValue={plan.grace_period_months}
+                    required
+                  />
+                </div>
 
-              <Button type="submit" className="mt-2">
-                Salvar
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id={`active_${plan.id}`}
+                    name="active"
+                    defaultChecked={plan.active}
+                  />
+                  <Label htmlFor={`active_${plan.id}`}>Plano ativo</Label>
+                </div>
+
+                <Button type="submit" className="mt-2">
+                  Salvar
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        ))
       )}
 
       <Card className="max-w-md">
@@ -291,46 +303,6 @@ export default async function PainelSistemaPage({
         </CardContent>
       </Card>
 
-      <Card className="max-w-md">
-        <CardHeader>
-          <CardTitle>Preços do plano anual</CardTitle>
-          <CardDescription>
-            Valores exibidos na landing page e no checkout — não mudam o
-            valor efetivamente cobrado por ciclo (isso fica no plano, acima).
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form action={updatePricingConfig} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="monthly_price_reais">Parcela mensal (R$)</Label>
-              <Input
-                id="monthly_price_reais"
-                name="monthly_price_reais"
-                type="number"
-                step="0.01"
-                min="0"
-                defaultValue={centsToReais(config?.monthly_price_cents ?? 4990)}
-                required
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="annual_price_reais">Preço à vista (R$)</Label>
-              <Input
-                id="annual_price_reais"
-                name="annual_price_reais"
-                type="number"
-                step="0.01"
-                min="0"
-                defaultValue={centsToReais(config?.annual_price_cents ?? 49900)}
-                required
-              />
-            </div>
-            <Button type="submit" className="mt-2">
-              Salvar
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
 
       <Card className="max-w-md">
         <CardHeader>

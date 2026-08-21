@@ -16,17 +16,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { checkout } from "./checkout-actions";
+import { buttonVariants } from "@/components/ui/button";
+import { CheckoutForm } from "./checkout-form";
 
 const STEPS = [
   {
     icon: ClipboardCheckIcon,
-    title: "Escolha como pagar",
-    description: "Plano anual do Clube Neon: 12x R$ 49,90 ou R$ 499,00 à vista.",
+    title: "Escolha seu plano",
+    description: "Essencial ou Completo — parcelado em 12x ou à vista.",
   },
   {
     icon: ZapIcon,
@@ -36,49 +33,62 @@ const STEPS = [
   {
     icon: PizzaIcon,
     title: "Use no mês",
-    description:
-      "R$ 99,00 de crédito liberado todo mês — válido só no mês vigente, não acumula.",
+    description: "Crédito liberado todo mês — válido só no mês vigente, não acumula.",
   },
 ];
 
-const BENEFITS = [
-  "R$ 99,00 em crédito todo mês, por 12 meses (R$ 1.188,00 no total)",
+const BASE_BENEFITS = [
+  "Crédito de consumo todo mês, por 12 meses",
   "Válido no cardápio inteiro da Neon, dentro do mês de referência",
-  "Crédito disponível a partir da confirmação do pagamento",
-  "Acesso à área do membro com histórico completo",
+  "Indicação de amigos, sorteio mensal e cashback",
+  "Níveis Ouro e Black com descontos extras",
   "Escolha entre parcelado (12x) ou à vista, com desconto",
 ];
 
-const FAQ = [
-  {
-    question: "Quanto de crédito recebo?",
-    answer: "R$ 99,00 por mês em crédito real (em reais), por 12 meses — R$ 1.188,00 no total.",
-  },
-  {
-    question: "O crédito acumula se eu não usar?",
-    answer:
-      "Não. O crédito de cada mês é válido apenas naquele mês — se não usar, não passa pro próximo ciclo. A exceção é o último mês do plano: o saldo restante fica disponível por mais 2 meses.",
-  },
-  {
-    question: "Posso cancelar antes dos 12 meses?",
-    answer:
-      "Sim. Ao cancelar, você paga os 3 meses seguintes ao pedido de cancelamento e continua tendo acesso ao crédito nesses meses. Após esse período, a assinatura encerra sem novas cobranças.",
-  },
-  {
-    question: "O que acontece ao fim dos 12 meses?",
-    answer:
-      "Sua assinatura encerra automaticamente. Você terá 2 meses extras para usar o saldo remanescente do último ciclo. Após isso, poderá renovar quando quiser.",
-  },
-  {
-    question: "Qual a diferença entre parcelado e à vista?",
-    answer:
-      "No parcelado você paga 12x R$ 49,90 (total R$ 598,80). No à vista você paga R$ 499,00 de uma vez e economiza R$ 99,80 — equivale a ganhar 1 mês grátis. O crédito mensal de R$ 99,00 é o mesmo nas duas opções.",
-  },
-  {
-    question: "Posso pedir qualquer coisa com o crédito?",
-    answer: "Sim, qualquer item do cardápio até o limite disponível no mês.",
-  },
+const COMPLETO_EXTRA_BENEFITS = [
+  "Voucher pizza 2x1 a cada 2 meses",
+  "Frete grátis todo mês em Taubaté",
 ];
+
+function buildFaq(
+  essencial: { monthlyPriceCents: number; annualPriceCents: number; monthlyCreditCents: number },
+  completo: { monthlyPriceCents: number; annualPriceCents: number; monthlyCreditCents: number },
+) {
+  return [
+    {
+      question: "Quanto de crédito recebo?",
+      answer: `Depende do plano: ${formatCents(essencial.monthlyCreditCents)} por mês no Essencial, ${formatCents(completo.monthlyCreditCents)} por mês no Completo — por 12 meses.`,
+    },
+    {
+      question: "Qual a diferença entre Essencial e Completo?",
+      answer:
+        "O Completo tem tudo do Essencial, mais crédito mensal, voucher de pizza 2x1 a cada 2 meses e frete grátis todo mês em Taubaté.",
+    },
+    {
+      question: "O crédito acumula se eu não usar?",
+      answer:
+        "Não. O crédito de cada mês é válido apenas naquele mês — se não usar, não passa pro próximo ciclo. A exceção é o último mês do plano: o saldo restante fica disponível por mais 2 meses.",
+    },
+    {
+      question: "Posso cancelar antes dos 12 meses?",
+      answer:
+        "Sim. No parcelado, você paga os 3 meses seguintes ao pedido e continua com acesso ao crédito nesse período. No à vista, não há cobranças novas — você mantém o crédito até o fim natural dos 12 meses, sem reembolso do valor pago.",
+    },
+    {
+      question: "O que acontece ao fim dos 12 meses?",
+      answer:
+        "Sua participação encerra automaticamente. Você terá 2 meses extras para usar o saldo remanescente do último ciclo. Após isso, poderá renovar quando quiser.",
+    },
+    {
+      question: "Qual a diferença entre parcelado e à vista?",
+      answer: `No parcelado você paga em 12x (Essencial: ${formatCents(essencial.monthlyPriceCents)}/mês, Completo: ${formatCents(completo.monthlyPriceCents)}/mês). No à vista você paga de uma vez (Essencial: ${formatCents(essencial.annualPriceCents)}, Completo: ${formatCents(completo.annualPriceCents)}) e economiza — equivale a ganhar 1 mês grátis. O crédito mensal é o mesmo nas duas formas de pagamento.`,
+    },
+    {
+      question: "Posso pedir qualquer coisa com o crédito?",
+      answer: "Sim, qualquer item do cardápio até o limite disponível no mês.",
+    },
+  ];
+}
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -90,28 +100,43 @@ export default async function LandingPage({
   const sp = await searchParams;
   const checkoutError = first(sp.checkout_error);
   const refCode = first(sp.ref)?.trim().toUpperCase() || null;
+  const planoParam = first(sp.plano)?.trim().toUpperCase();
+  const initialPlanType: "ESSENCIAL" | "COMPLETO" = planoParam === "ESSENCIAL" ? "ESSENCIAL" : "COMPLETO";
 
   const supabase = await createClient();
   const { data: config } = await supabase
     .from("system_config")
-    .select("referral_credit_cents, annual_price_cents, monthly_price_cents")
+    .select("referral_credit_cents")
     .limit(1)
     .maybeSingle();
   const referralCreditCents = config?.referral_credit_cents ?? 3000;
-  const monthlyPriceCents = config?.monthly_price_cents ?? 4990;
-  const annualPriceCents = config?.annual_price_cents ?? 49900;
-  const monthlyTotalCents = monthlyPriceCents * 12;
-  const annualSavingsCents = monthlyTotalCents - annualPriceCents;
 
-  const { data: planData } = await supabase
+  const { data: plansData } = await supabase
     .from("plans")
-    .select("monthly_credit_cents")
-    .eq("active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-  const monthlyCreditCents = planData?.monthly_credit_cents ?? 9900;
-  const totalCreditCents = monthlyCreditCents * 12;
+    .select("plan_type, price_cents, annual_price_cents, monthly_credit_cents")
+    .eq("active", true);
+  const plansByType = Object.fromEntries(
+    (plansData ?? []).map((p) => [
+      p.plan_type,
+      {
+        monthlyPriceCents: p.price_cents,
+        annualPriceCents: p.annual_price_cents,
+        monthlyCreditCents: p.monthly_credit_cents,
+      },
+    ]),
+  ) as Record<"ESSENCIAL" | "COMPLETO", { monthlyPriceCents: number; annualPriceCents: number; monthlyCreditCents: number }>;
+
+  const essencial = plansByType.ESSENCIAL ?? {
+    monthlyPriceCents: 3990,
+    annualPriceCents: 39900,
+    monthlyCreditCents: 8000,
+  };
+  const completo = plansByType.COMPLETO ?? {
+    monthlyPriceCents: 4990,
+    annualPriceCents: 49900,
+    monthlyCreditCents: 9900,
+  };
+  const faq = buildFaq(essencial, completo);
 
   let validReferral = false;
   if (refCode) {
@@ -155,13 +180,12 @@ export default async function LandingPage({
           🎉 CLUBE NEON – CRÉDITO TODO MÊS PRA COMER NA NEON
         </h1>
         <p className="max-w-xl text-lg text-primary-foreground/90">
-          12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)}{" "}
-          à vista — {formatCents(monthlyCreditCents)} de crédito todo mês na
-          Neon, por 12 meses.
+          Dois planos: Essencial ({formatCents(essencial.monthlyCreditCents)}/mês) ou
+          Completo ({formatCents(completo.monthlyCreditCents)}/mês + vouchers). Parcelado
+          em 12x ou à vista, com desconto.
         </p>
         <p className="max-w-xl text-sm text-primary-foreground/70">
-          Total em crédito no ano: {formatCents(totalCreditCents)}. O
-          crédito de cada mês vale só naquele mês — não acumula.
+          O crédito de cada mês vale só naquele mês — não acumula.
         </p>
         <div className="flex flex-col items-center gap-4 sm:flex-row">
           <a
@@ -199,63 +223,86 @@ export default async function LandingPage({
         </div>
       </section>
 
-      {/* Seção 3 — O plano */}
+      {/* Seção 3 — Os planos */}
       <section id="plano" className="bg-background px-6 py-20">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6">
+        <div className="mx-auto flex max-w-4xl flex-col gap-6">
           <h2 className="text-center font-heading text-2xl font-bold text-foreground sm:text-3xl">
             Clube Neon — plano anual, 12 meses
           </h2>
           <div className="grid gap-6 sm:grid-cols-2">
             <Card>
               <CardHeader className="items-center gap-2 text-center">
-                <Badge variant="outline">PARCELADO</Badge>
-                <CardTitle className="font-heading text-3xl font-extrabold text-primary">
-                  12x {formatCents(monthlyPriceCents)}
+                <Badge variant="outline">ESSENCIAL</Badge>
+                <CardTitle className="font-heading text-2xl font-extrabold text-primary">
+                  12x {formatCents(essencial.monthlyPriceCents)}
                 </CardTitle>
                 <CardDescription>
-                  Total: {formatCents(monthlyTotalCents)} — débito automático todo mês
+                  ou {formatCents(essencial.annualPriceCents)} à vista
                 </CardDescription>
               </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <ul className="flex flex-col gap-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-secondary" />
+                    <span>{formatCents(essencial.monthlyCreditCents)}/mês em crédito de consumo</span>
+                  </li>
+                  {BASE_BENEFITS.slice(1).map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-2">
+                      <CheckIcon className="mt-0.5 size-4 shrink-0 text-secondary" />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href="/?plano=essencial#checkout"
+                  className={buttonVariants({ variant: "outline", className: "w-full" })}
+                >
+                  ASSINAR ESSENCIAL
+                </a>
+              </CardContent>
             </Card>
-            <Card className="border-2 border-secondary">
+
+            <Card className="border-2 border-secondary bg-secondary/5">
               <CardHeader className="items-center gap-2 text-center">
-                <Badge variant="secondary">À VISTA ⭐ MAIS VANTAJOSO</Badge>
-                <CardTitle className="font-heading text-3xl font-extrabold text-primary">
-                  {formatCents(annualPriceCents)}
+                <Badge variant="secondary">COMPLETO ⭐ MAIS VANTAJOSO</Badge>
+                <CardTitle className="font-heading text-2xl font-extrabold text-primary">
+                  12x {formatCents(completo.monthlyPriceCents)}
                 </CardTitle>
                 <CardDescription>
-                  Economia de {formatCents(annualSavingsCents)} — equivale a 1 mês grátis
+                  ou {formatCents(completo.annualPriceCents)} à vista
                 </CardDescription>
               </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <ul className="flex flex-col gap-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-secondary" />
+                    <span>{formatCents(completo.monthlyCreditCents)}/mês em crédito de consumo</span>
+                  </li>
+                  {BASE_BENEFITS.slice(1).map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-2">
+                      <CheckIcon className="mt-0.5 size-4 shrink-0 text-secondary" />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                  {COMPLETO_EXTRA_BENEFITS.map((benefit) => (
+                    <li key={benefit} className="flex items-start gap-2">
+                      <CheckIcon className="mt-0.5 size-4 shrink-0 text-secondary" />
+                      <span className="font-medium">{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href="/?plano=completo#checkout"
+                  className={buttonVariants({ variant: "secondary", className: "w-full" })}
+                >
+                  ASSINAR COMPLETO
+                </a>
+              </CardContent>
             </Card>
           </div>
-
-          <Card className="border-2 border-secondary">
-            <CardContent className="flex flex-col gap-4 pt-6">
-              <p className="text-center text-sm">
-                Em ambas as opções: {formatCents(monthlyCreditCents)} de crédito
-                todo mês por 12 meses — total de {formatCents(totalCreditCents)}{" "}
-                em crédito no ano.
-              </p>
-              <ul className="flex flex-col gap-2 text-sm">
-                {BENEFITS.map((benefit) => (
-                  <li key={benefit} className="flex items-start gap-2">
-                    <CheckIcon className="mt-0.5 size-4 shrink-0 text-secondary" />
-                    <span>{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-center text-xs text-muted-foreground">
-                ⚠️ O crédito mensal não acumula para o mês seguinte.
-              </p>
-              <a
-                href="#checkout"
-                className={buttonVariants({ variant: "secondary", className: "w-full" })}
-              >
-                ASSINAR O CLUBE NEON
-              </a>
-            </CardContent>
-          </Card>
+          <p className="text-center text-xs text-muted-foreground">
+            ⚠️ O crédito mensal não acumula para o mês seguinte.
+          </p>
         </div>
       </section>
 
@@ -268,12 +315,12 @@ export default async function LandingPage({
             </h2>
             <p className="text-muted-foreground">
               Chegou na Neon? Informe ao atendente que é membro do Clube
-              Neon. O valor é debitado digitalmente do seu saldo.
+              Neon. O crédito é debitado digitalmente na hora.
             </p>
           </div>
           <div className="flex flex-col gap-3 rounded-xl bg-card p-6 ring-1 ring-border">
             <p className="font-heading text-xl font-bold text-primary">
-              {formatCents(monthlyCreditCents)} por mês
+              {formatCents(essencial.monthlyCreditCents)} a {formatCents(completo.monthlyCreditCents)} por mês
             </p>
             <p className="text-sm text-muted-foreground">
               Use em qualquer item do cardápio, dentro do mês de referência.
@@ -293,7 +340,7 @@ export default async function LandingPage({
             Perguntas frequentes
           </h2>
           <Accordion className="mt-8">
-            {FAQ.map((item) => (
+            {faq.map((item) => (
               <AccordionItem key={item.question} value={item.question}>
                 <AccordionTrigger>{item.question}</AccordionTrigger>
                 <AccordionContent>{item.answer}</AccordionContent>
@@ -309,8 +356,7 @@ export default async function LandingPage({
           Pronto para fazer parte do Clube Neon?
         </h2>
         <p className="text-primary-foreground/90">
-          12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)}{" "}
-          à vista. {formatCents(monthlyCreditCents)} de crédito todo mês.
+          Essencial ou Completo. Parcelado em 12x ou à vista. Crédito todo mês.
         </p>
         <a
           href="#checkout"
@@ -329,14 +375,10 @@ export default async function LandingPage({
             </h2>
             <div className="flex flex-col gap-1.5 text-sm text-primary-foreground/90">
               <p>Clube Neon — plano anual, 12 meses</p>
-              <p>12x {formatCents(monthlyPriceCents)} ou {formatCents(annualPriceCents)} à vista</p>
-              <p>{formatCents(monthlyCreditCents)} de crédito todo mês</p>
               <p className="mt-2 text-primary-foreground/70">
-                Você está contratando o Clube Neon — plano anual de 12
-                meses. Você receberá {formatCents(monthlyCreditCents)} em
-                crédito de consumo por mês, válido apenas no mês de
-                referência — o crédito não utilizado não é transferido
-                para o mês seguinte.
+                Você receberá crédito de consumo por mês, válido apenas no
+                mês de referência — o crédito não utilizado não é
+                transferido para o mês seguinte.
               </p>
             </div>
           </div>
@@ -356,96 +398,14 @@ export default async function LandingPage({
             ) : (
               <Card>
                 <CardContent className="pt-6">
-                  <form action={checkout} className="flex flex-col gap-3">
-                    {checkoutError ? (
-                      <p className="text-sm text-destructive">{checkoutError}</p>
-                    ) : null}
-
-                    {validReferral ? (
-                      <div className="rounded-md border border-secondary/40 bg-secondary/10 p-3 text-sm text-primary-foreground">
-                        Você foi indicado por um amigo Neon! Ao ativar sua
-                        assinatura, ambos ganham {formatCents(referralCreditCents)}{" "}
-                        de crédito.
-                        <input type="hidden" name="ref" value={refCode ?? ""} />
-                      </div>
-                    ) : null}
-
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="name">Nome completo</Label>
-                      <Input id="name" name="name" required />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="email">E-mail</Label>
-                      <Input id="email" name="email" type="email" required />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input id="phone" name="phone" type="tel" required />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="cpf">CPF (opcional)</Label>
-                      <Input id="cpf" name="cpf" placeholder="000.000.000-00" />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <Label>Forma de pagamento</Label>
-                      <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-input p-3 text-sm has-checked:border-secondary has-checked:bg-secondary/10">
-                        <input type="radio" name="payment_type" value="MONTHLY" className="mt-0.5" />
-                        <span>
-                          <span className="block font-medium">Parcelado — 12x {formatCents(monthlyPriceCents)}</span>
-                          <span className="block text-muted-foreground">Total: {formatCents(monthlyTotalCents)}</span>
-                        </span>
-                      </label>
-                      <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-input p-3 text-sm has-checked:border-secondary has-checked:bg-secondary/10">
-                        <input type="radio" name="payment_type" value="ANNUAL" defaultChecked className="mt-0.5" />
-                        <span>
-                          <span className="block font-medium">
-                            À vista — {formatCents(annualPriceCents)} ⭐ mais vantajoso
-                          </span>
-                          <span className="block text-muted-foreground">
-                            Economia de {formatCents(annualSavingsCents)}
-                          </span>
-                        </span>
-                      </label>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="password">Senha</Label>
-                      <Input
-                        id="password"
-                        name="password"
-                        type="password"
-                        minLength={8}
-                        required
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <Label htmlFor="confirm_password">Confirmar senha</Label>
-                      <Input
-                        id="confirm_password"
-                        name="confirm_password"
-                        type="password"
-                        minLength={8}
-                        required
-                      />
-                    </div>
-                    <div className="flex items-start gap-2">
-                      <Checkbox id="terms" name="terms" required className="mt-0.5" />
-                      <Label htmlFor="terms" className="text-xs font-normal text-muted-foreground">
-                        Li e aceito os{" "}
-                        <a href="/termos" className="underline underline-offset-2">
-                          termos de uso
-                        </a>{" "}
-                        e a{" "}
-                        <a href="/politica-de-privacidade" className="underline underline-offset-2">
-                          política de privacidade
-                        </a>
-                        .
-                      </Label>
-                    </div>
-
-                    <Button type="submit" variant="secondary" className="mt-2">
-                      ASSINAR O CLUBE NEON
-                    </Button>
-                  </form>
+                  <CheckoutForm
+                    plans={{ ESSENCIAL: essencial, COMPLETO: completo }}
+                    initialPlanType={initialPlanType}
+                    referralCreditCents={referralCreditCents}
+                    validReferral={validReferral}
+                    refCode={refCode}
+                    checkoutError={checkoutError ?? null}
+                  />
                 </CardContent>
               </Card>
             )}

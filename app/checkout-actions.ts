@@ -29,6 +29,7 @@ export async function checkout(formData: FormData) {
     password: formData.get("password"),
     confirm_password: formData.get("confirm_password"),
     payment_type: formData.get("payment_type"),
+    plan_type: formData.get("plan_type"),
     terms: formData.get("terms") === "on",
   });
 
@@ -37,7 +38,7 @@ export async function checkout(formData: FormData) {
     redirect(`/?checkout_error=${encodeURIComponent(message)}#checkout`);
   }
 
-  const { name, email, phone, cpf, password, payment_type } = parsed.data;
+  const { name, email, phone, cpf, password, payment_type, plan_type } = parsed.data;
   const refCode = String(formData.get("ref") ?? "").trim() || null;
   const supabase = await createClient();
 
@@ -107,27 +108,18 @@ export async function checkout(formData: FormData) {
 
   const { data: plan } = await supabase
     .from("plans")
-    .select("id")
+    .select("id, annual_price_cents")
     .eq("active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
+    .eq("plan_type", plan_type)
     .maybeSingle();
 
   if (!plan) {
     redirect(
-      `/?checkout_error=${encodeURIComponent("Nenhum plano disponível no momento — fale com a gente.")}#checkout`,
+      `/?checkout_error=${encodeURIComponent("Esse plano não está disponível no momento — fale com a gente.")}#checkout`,
     );
   }
 
-  let annualPaymentAmountCents: number | null = null;
-  if (payment_type === "ANNUAL") {
-    const { data: config } = await supabase
-      .from("system_config")
-      .select("annual_price_cents")
-      .limit(1)
-      .maybeSingle();
-    annualPaymentAmountCents = config?.annual_price_cents ?? 49900;
-  }
+  const annualPaymentAmountCents = payment_type === "ANNUAL" ? plan.annual_price_cents : null;
 
   const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")

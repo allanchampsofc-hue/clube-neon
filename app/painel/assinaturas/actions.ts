@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireStaff } from "@/lib/auth";
 import { getRequestIp } from "@/lib/request-ip";
 
-export async function createSubscription(customerId: string) {
+export async function createSubscription(customerId: string, formData: FormData) {
   await requireStaff();
   const supabase = await createClient();
 
@@ -24,18 +24,18 @@ export async function createSubscription(customerId: string) {
     );
   }
 
+  const planId = String(formData.get("plan_id") ?? "");
   const { data: plan } = await supabase
     .from("plans")
     .select("id")
+    .eq("id", planId)
     .eq("active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
     .maybeSingle();
 
   if (!plan) {
     redirect(
       `/painel/clientes/${customerId}?error=${encodeURIComponent(
-        "Nenhum plano ativo cadastrado — configure em /painel/sistema.",
+        "Plano inválido ou inativo — escolha um plano.",
       )}`,
     );
   }

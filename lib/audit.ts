@@ -26,6 +26,10 @@ export const AUDIT_ACTIONS = [
   "SUBSCRIPTION_CANCELLATION_REVERTED",
   "WHATSAPP_CREDIT_RELEASED",
   "WHATSAPP_PLAN_ENDING_SOON",
+  "VOUCHER_GENERATED",
+  "VOUCHER_REDEEMED",
+  "VOUCHER_CODE_INVALID",
+  "VOUCHERS_EXPIRED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -58,6 +62,10 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   SUBSCRIPTION_CANCELLATION_REVERTED: "Cancelamento de assinatura revertido pela equipe",
   WHATSAPP_CREDIT_RELEASED: "WhatsApp de crédito liberado enviado",
   WHATSAPP_PLAN_ENDING_SOON: "WhatsApp de fim de plano enviado",
+  VOUCHER_GENERATED: "Voucher gerado",
+  VOUCHER_REDEEMED: "Voucher resgatado",
+  VOUCHER_CODE_INVALID: "Código de voucher inválido ou expirado informado",
+  VOUCHERS_EXPIRED: "Vouchers expirados",
 };
 
 export const AUDIT_ENTITIES = [
@@ -67,4 +75,5 @@ export const AUDIT_ENTITIES = [
   "credit_transaction",
   "credit_use_request",
   "system_config",
+  "voucher",
 ] as const;

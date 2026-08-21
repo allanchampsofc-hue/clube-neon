@@ -14,6 +14,7 @@ export const checkoutSchema = z
     password: z.string().min(8, "A senha precisa ter pelo menos 8 caracteres."),
     confirm_password: z.string(),
     payment_type: z.enum(["MONTHLY", "ANNUAL"], { error: "Escolha uma forma de pagamento." }),
+    plan_type: z.enum(["ESSENCIAL", "COMPLETO"], { error: "Escolha um plano." }),
     terms: z.boolean().refine((v) => v === true, {
       error: "Você precisa aceitar os termos de uso pra continuar.",
     }),

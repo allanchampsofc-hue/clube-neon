@@ -59,6 +59,17 @@ export default async function PainelPage() {
   const utilizado = metrics?.credito_utilizado_mes_cents ?? 0;
   const taxaUtilizacao = liberado > 0 ? Math.round((utilizado / liberado) * 100) : 0;
 
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const { count: vouchersAtivos } = await supabase
+    .from("vouchers")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "DISPONIVEL");
+  const { count: vouchersUtilizadosMes } = await supabase
+    .from("vouchers")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "UTILIZADO")
+    .gte("used_at", `${currentMonth}-01T00:00:00`);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -127,6 +138,11 @@ export default async function PainelPage() {
           />
           <StatCard title="Membros Ouro" value={String(metrics.membros_ouro)} />
           <StatCard title="Membros Black" value={String(metrics.membros_black)} />
+          <StatCard title="Vouchers ativos" value={String(vouchersAtivos ?? 0)} />
+          <StatCard
+            title="Vouchers utilizados este mês"
+            value={String(vouchersUtilizadosMes ?? 0)}
+          />
           {metrics.satisfacao_media !== null ? (
             <StatCard
               title="Satisfação média"

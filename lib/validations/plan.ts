@@ -8,6 +8,9 @@ export const planFormSchema = z.object({
   price_reais: z.coerce
     .number({ error: "Informe um valor válido." })
     .nonnegative("O valor não pode ser negativo."),
+  annual_price_reais: z.coerce
+    .number({ error: "Informe um valor válido." })
+    .nonnegative("O valor não pode ser negativo."),
   monthly_credit_reais: z.coerce
     .number({ error: "Informe um valor válido." })
     .nonnegative("O crédito não pode ser negativo."),

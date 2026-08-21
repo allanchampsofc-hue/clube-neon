@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
   const { data: dueSubscriptions, error } = await supabase
     .from("subscriptions")
-    .select("id, customer:customers(id, name, phone)")
+    .select("id, customer:customers(id, name, phone), plan:plans(plan_type)")
     .eq("status", "ATIVA")
     .lte("current_period_end", new Date().toISOString());
 
@@ -34,10 +34,12 @@ export async function GET(request: NextRequest) {
 
   const results: Array<{ subscriptionId: string; ok: boolean; error?: string }> = [];
   let creditReleasedNotified = 0;
+  let vouchersGenerated = 0;
 
   for (const subscription of (dueSubscriptions ?? []) as unknown as Array<{
     id: string;
     customer: { id: string; name: string; phone: string | null } | null;
+    plan: { plan_type: string } | null;
   }>) {
     const { data: newCycle, error: rpcError } = await supabase
       .rpc("process_subscription_cycle_rollover", { p_subscription_id: subscription.id })
@@ -86,10 +88,68 @@ export async function GET(request: NextRequest) {
         });
       }
     }
+
+    // Vouchers só nascem do rollover mensal normal — mesma condição do
+    // aviso de crédito liberado acima.
+    if (!rpcError && cycle && !cycle.is_grace_period && cycle.cycle_number > 1) {
+      const { data: pizzaVoucher } = await supabase
+        .rpc("generate_bimonthly_voucher", { p_subscription_id: subscription.id })
+        .single();
+      if (pizzaVoucher) {
+        vouchersGenerated += 1;
+        const voucher = pizzaVoucher as { code: string; valid_until: string };
+        if (subscription.customer?.phone) {
+          const message = `Seu voucher do mês chegou, ${subscription.customer.name}! 🍕\nCompre uma pizza de 8 fatias e leve outra de igual ou menor sabor. Código: ${voucher.code}. Válido por 30 dias. Use no salão da Neon.`;
+          try {
+            await sendWhatsAppMessage(subscription.customer.phone, message);
+          } catch (whatsappError) {
+            await supabase.from("audit_logs").insert({
+              action: "WHATSAPP_SEND_FAILED",
+              entity: "subscription",
+              entity_id: subscription.id,
+              after_state: {
+                context: "voucher_pizza",
+                error: whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
+              },
+            });
+          }
+        }
+      }
+
+      if (subscription.plan?.plan_type === "COMPLETO") {
+        const { data: freteVoucher } = await supabase
+          .rpc("generate_monthly_frete", { p_subscription_id: subscription.id })
+          .single();
+        if (freteVoucher) {
+          vouchersGenerated += 1;
+          const voucher = freteVoucher as { code: string; valid_until: string };
+          if (subscription.customer?.phone) {
+            const message = `Frete grátis garantido este mês, ${subscription.customer.name}! 🛵\nUse o cupom ${voucher.code} no seu pedido de entrega em Taubaté. Válido até ${formatDate(voucher.valid_until)}.`;
+            try {
+              await sendWhatsAppMessage(subscription.customer.phone, message);
+            } catch (whatsappError) {
+              await supabase.from("audit_logs").insert({
+                action: "WHATSAPP_SEND_FAILED",
+                entity: "subscription",
+                entity_id: subscription.id,
+                after_state: {
+                  context: "voucher_frete",
+                  error: whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
+                },
+              });
+            }
+          }
+        }
+      }
+    }
   }
 
   const { data: cancelledCount, error: cancellationError } = await supabase.rpc(
     "process_scheduled_cancellations",
+  );
+
+  const { data: expiredVouchersCount, error: voucherExpireError } = await supabase.rpc(
+    "expire_old_vouchers",
   );
 
   const { data: levelChangesData, error: levelError } = await supabase.rpc(
@@ -203,6 +263,9 @@ export async function GET(request: NextRequest) {
     processed: results.length,
     results,
     creditReleasedNotified,
+    vouchersGenerated,
+    expiredVouchersCount: expiredVouchersCount ?? 0,
+    voucherExpireError: voucherExpireError?.message,
     scheduledCancellationsProcessed: cancelledCount ?? 0,
     scheduledCancellationsError: cancellationError?.message,
     membershipLevelsError: levelError?.message,

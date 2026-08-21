@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 const NAV_ITEMS = [
   { href: "/minha-conta", label: "Início" },
   { href: "/minha-conta/credito", label: "Meu Crédito" },
+  { href: "/minha-conta/vouchers", label: "Meus Vouchers" },
   { href: "/minha-conta/historico", label: "Histórico" },
   { href: "/minha-conta/indicacoes", label: "Indique um amigo" },
   { href: "/minha-conta/perfil", label: "Meu Perfil" },

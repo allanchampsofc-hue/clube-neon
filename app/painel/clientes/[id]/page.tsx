@@ -85,6 +85,12 @@ export default async function ClienteDetalhePage({
     ["PENDENTE", "ATIVA", "INADIMPLENTE", "SUSPENSA"].includes(s.status),
   );
 
+  const { data: activePlans } = await supabase
+    .from("plans")
+    .select("id, name")
+    .eq("active", true)
+    .order("created_at", { ascending: true });
+
   const activeSubscription = subscriptions.find((s) => s.status === "ATIVA");
   let isInGracePeriod = false;
   if (activeSubscription) {
@@ -306,9 +312,27 @@ export default async function ClienteDetalhePage({
           ))}
 
           {!hasOpenSubscription ? (
-            <form action={createSubscription.bind(null, customer.id)}>
+            <form
+              action={createSubscription.bind(null, customer.id)}
+              className="flex items-end gap-2"
+            >
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="plan_id">Plano</Label>
+                <select
+                  id="plan_id"
+                  name="plan_id"
+                  className="h-8 rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                  required
+                >
+                  {(activePlans ?? []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <Button type="submit" variant="secondary">
-                Criar assinatura (Clube Neon)
+                Criar assinatura
               </Button>
             </form>
           ) : null}

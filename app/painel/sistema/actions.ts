@@ -12,6 +12,7 @@ export async function updatePlan(planId: string, formData: FormData) {
   const parsed = planFormSchema.safeParse({
     name: formData.get("name"),
     price_reais: formData.get("price_reais"),
+    annual_price_reais: formData.get("annual_price_reais"),
     monthly_credit_reais: formData.get("monthly_credit_reais"),
     duration_months: formData.get("duration_months"),
     grace_period_months: formData.get("grace_period_months"),
@@ -23,8 +24,15 @@ export async function updatePlan(planId: string, formData: FormData) {
     redirect(`/painel/sistema?error=${encodeURIComponent(message)}`);
   }
 
-  const { name, price_reais, monthly_credit_reais, duration_months, grace_period_months, active } =
-    parsed.data;
+  const {
+    name,
+    price_reais,
+    annual_price_reais,
+    monthly_credit_reais,
+    duration_months,
+    grace_period_months,
+    active,
+  } = parsed.data;
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -32,6 +40,7 @@ export async function updatePlan(planId: string, formData: FormData) {
     .update({
       name,
       price_cents: reaisToCents(price_reais),
+      annual_price_cents: reaisToCents(annual_price_reais),
       monthly_credit_cents: reaisToCents(monthly_credit_reais),
       duration_months,
       grace_period_months,
@@ -139,33 +148,11 @@ export async function updateCashbackConfig(formData: FormData) {
   redirect("/painel/sistema?success=1");
 }
 
-export async function updatePricingConfig(formData: FormData) {
-  await requireSuperAdmin();
-
-  const monthlyReais = Number(formData.get("monthly_price_reais"));
-  const annualReais = Number(formData.get("annual_price_reais"));
-
-  if (!Number.isFinite(monthlyReais) || monthlyReais <= 0 || !Number.isFinite(annualReais) || annualReais <= 0) {
-    redirect(`/painel/sistema?error=${encodeURIComponent("Valores de preço inválidos.")}`);
-  }
-
-  const supabase = await createClient();
-  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
-
-  const { error } = await supabase
-    .from("system_config")
-    .update({
-      monthly_price_cents: reaisToCents(monthlyReais),
-      annual_price_cents: reaisToCents(annualReais),
-    })
-    .eq("id", config!.id);
-
-  if (error) {
-    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
-  }
-
-  redirect("/painel/sistema?success=1");
-}
+// updatePricingConfig (system_config.monthly_price_cents/annual_price_cents)
+// foi removida — pricing agora é por plano (plans.price_cents/
+// annual_price_cents, editado no card "Planos" acima). As colunas antigas
+// em system_config ficam sem uso no banco (não removidas, é só uma
+// migration a mais sem ganho real), mas nada mais lê/escreve nelas.
 
 export async function updateCycleNotificationsConfig(formData: FormData) {
   await requireSuperAdmin();

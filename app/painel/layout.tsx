@@ -59,6 +59,14 @@ export default async function PainelLayout({
         </a>
         {isManager ? (
           <a
+            href="/painel/vouchers"
+            className="hover:text-primary hover:underline"
+          >
+            Vouchers
+          </a>
+        ) : null}
+        {isManager ? (
+          <a
             href="/painel/relatorios"
             className="hover:text-primary hover:underline"
           >

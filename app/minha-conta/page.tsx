@@ -111,6 +111,12 @@ export default async function MinhaContaPage({
     0,
   );
 
+  const { count: availableVouchersCount } = await supabase
+    .from("vouchers")
+    .select("id", { count: "exact", head: true })
+    .eq("customer_id", customer.id)
+    .eq("status", "DISPONIVEL");
+
   const { data: membershipData } = await supabase
     .from("customers")
     .select("membership_level")
@@ -204,6 +210,23 @@ export default async function MinhaContaPage({
           <CardContent className="pt-6 text-sm text-primary">
             💰 Você tem {formatCents(pendingCashbackCents)} de cashback
             aguardando o próximo ciclo.
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {availableVouchersCount && availableVouchersCount > 0 ? (
+        <Card className="max-w-md border-secondary bg-secondary/10">
+          <CardContent className="flex items-center justify-between gap-3 pt-6 text-sm text-primary">
+            <span>
+              Você tem {availableVouchersCount}{" "}
+              {availableVouchersCount === 1 ? "voucher disponível" : "vouchers disponíveis"}! 🍕
+            </span>
+            <a
+              href="/minha-conta/vouchers"
+              className="font-medium underline-offset-4 hover:underline"
+            >
+              Ver vouchers
+            </a>
           </CardContent>
         </Card>
       ) : null}
