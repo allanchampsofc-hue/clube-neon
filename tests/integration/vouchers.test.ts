@@ -218,10 +218,13 @@ describeIfEnv("Vouchers — planos, geração e resgate (integração)", () => {
       expect(error).not.toBeNull();
     });
 
-    it("voucher expirado é rejeitado", async () => {
+    it("voucher expirado é rejeitado e marcado como EXPIRADO", async () => {
       const voucher = await insertVoucher({ validUntil: new Date(Date.now() - 1000) });
-      const { error } = await admin.rpc("redeem_voucher", { p_code: voucher.code, p_operator_id: null });
-      expect(error).not.toBeNull();
+      const { data, error } = await admin
+        .rpc("redeem_voucher", { p_code: voucher.code, p_operator_id: null })
+        .single();
+      expect(error).toBeNull();
+      expect((data as { status: string } | null)?.status).toBe("EXPIRADO");
 
       const { data: row } = await admin.from("vouchers").select("status").eq("id", voucher.id).single();
       expect(row?.status).toBe("EXPIRADO");

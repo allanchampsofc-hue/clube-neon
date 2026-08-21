@@ -131,7 +131,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const voucher = data as { customer_id: string; voucher_type: string };
+    const voucher = data as { customer_id: string; voucher_type: string; status: string };
+
+    if (voucher.status !== "UTILIZADO") {
+      await supabase.from("audit_logs").insert({
+        action: "VOUCHER_CODE_INVALID",
+        entity: "voucher",
+        ip_address: ip,
+        after_state: { reason: "expired" },
+      });
+      return NextResponse.json({ error: "Este voucher expirou." }, { status: 410 });
+    }
+
     const { data: customer } = await supabase
       .from("customers")
       .select("name")
