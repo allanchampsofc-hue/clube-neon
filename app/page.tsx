@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { CheckIcon, ClipboardCheckIcon, PizzaIcon, ZapIcon } from "lucide-react";
 import { getCurrentUser, getUserRoleCodes, STAFF_ROLES } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -176,6 +177,14 @@ export default async function LandingPage({
 
       {/* Seção 1 — Hero */}
       <section className="flex flex-col items-center gap-6 bg-primary px-6 pt-32 pb-20 text-center text-primary-foreground">
+        <Image
+          src="/clube-neon-hero.png"
+          alt="Clube Neon — pessoas comemorando com pizza"
+          width={512}
+          height={512}
+          priority
+          className="w-full max-w-xs rounded-2xl sm:max-w-sm"
+        />
         <h1 className="max-w-3xl font-heading text-3xl font-extrabold text-balance sm:text-5xl">
           🎉 CLUBE NEON – CRÉDITO TODO MÊS PRA COMER NA NEON
         </h1>
