@@ -20,6 +20,7 @@ import {
   updateSurveyConfig,
   updateWaiterPin,
   updatePricingConfig,
+  updateCycleNotificationsConfig,
 } from "./actions";
 
 function centsToReais(cents: number) {
@@ -42,7 +43,7 @@ export default async function PainelSistemaPage({
   const { data: config } = await supabase
     .from("system_config")
     .select(
-      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin, monthly_price_cents, annual_price_cents",
+      "birthday_message, birthday_gift, membership_ouro_message, membership_black_message, cashback_percentage, cashback_max_cents, cashback_enabled, survey_message, survey_enabled, waiter_pin, monthly_price_cents, annual_price_cents, notify_credit_released, credit_released_message, notify_plan_ending, plan_ending_message",
     )
     .limit(1)
     .maybeSingle();
@@ -324,6 +325,72 @@ export default async function PainelSistemaPage({
                 required
               />
             </div>
+            <Button type="submit" className="mt-2">
+              Salvar
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-md">
+        <CardHeader>
+          <CardTitle>Notificações WhatsApp</CardTitle>
+          <CardDescription>
+            Avisos automáticos disparados pelo cron diário — crédito
+            liberado a cada rollover mensal, e aviso de fim de plano 30
+            dias antes do término dos 12 meses.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form action={updateCycleNotificationsConfig} className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="notify_credit_released"
+                name="notify_credit_released"
+                defaultChecked={config?.notify_credit_released ?? true}
+              />
+              <Label htmlFor="notify_credit_released">
+                Notificar crédito liberado
+              </Label>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="credit_released_message">Mensagem de crédito liberado</Label>
+              <Textarea
+                id="credit_released_message"
+                name="credit_released_message"
+                rows={4}
+                defaultValue={config?.credit_released_message ?? ""}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Variáveis: {"{nome}"}, {"{data_fim_ciclo}"}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="notify_plan_ending"
+                name="notify_plan_ending"
+                defaultChecked={config?.notify_plan_ending ?? true}
+              />
+              <Label htmlFor="notify_plan_ending">
+                Notificar fim de plano
+              </Label>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="plan_ending_message">Mensagem de fim de plano</Label>
+              <Textarea
+                id="plan_ending_message"
+                name="plan_ending_message"
+                rows={5}
+                defaultValue={config?.plan_ending_message ?? ""}
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Variáveis: {"{nome}"}, {"{data_fim}"}, {"{meses_restantes}"}
+              </p>
+            </div>
+
             <Button type="submit" className="mt-2">
               Salvar
             </Button>

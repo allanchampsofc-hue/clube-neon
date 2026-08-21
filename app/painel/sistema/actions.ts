@@ -167,6 +167,38 @@ export async function updatePricingConfig(formData: FormData) {
   redirect("/painel/sistema?success=1");
 }
 
+export async function updateCycleNotificationsConfig(formData: FormData) {
+  await requireSuperAdmin();
+
+  const notifyCreditReleased = formData.get("notify_credit_released") === "on";
+  const creditReleasedMessage = String(formData.get("credit_released_message") ?? "").trim();
+  const notifyPlanEnding = formData.get("notify_plan_ending") === "on";
+  const planEndingMessage = String(formData.get("plan_ending_message") ?? "").trim();
+
+  if (!creditReleasedMessage || !planEndingMessage) {
+    redirect(`/painel/sistema?error=${encodeURIComponent("Preencha as duas mensagens.")}`);
+  }
+
+  const supabase = await createClient();
+  const { data: config } = await supabase.from("system_config").select("id").limit(1).single();
+
+  const { error } = await supabase
+    .from("system_config")
+    .update({
+      notify_credit_released: notifyCreditReleased,
+      credit_released_message: creditReleasedMessage,
+      notify_plan_ending: notifyPlanEnding,
+      plan_ending_message: planEndingMessage,
+    })
+    .eq("id", config!.id);
+
+  if (error) {
+    redirect(`/painel/sistema?error=${encodeURIComponent(error.message)}`);
+  }
+
+  redirect("/painel/sistema?success=1");
+}
+
 export async function updateWaiterPin(formData: FormData) {
   const { user } = await requireSuperAdmin();
 

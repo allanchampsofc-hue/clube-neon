@@ -24,6 +24,8 @@ export const AUDIT_ACTIONS = [
   "WAITER_PIN_CHANGED",
   "SUBSCRIPTION_CANCELLATION_REQUESTED",
   "SUBSCRIPTION_CANCELLATION_REVERTED",
+  "WHATSAPP_CREDIT_RELEASED",
+  "WHATSAPP_PLAN_ENDING_SOON",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -54,6 +56,8 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   WAITER_PIN_CHANGED: "PIN da tela do garçom alterado",
   SUBSCRIPTION_CANCELLATION_REQUESTED: "Cancelamento de assinatura solicitado",
   SUBSCRIPTION_CANCELLATION_REVERTED: "Cancelamento de assinatura revertido pela equipe",
+  WHATSAPP_CREDIT_RELEASED: "WhatsApp de crédito liberado enviado",
+  WHATSAPP_PLAN_ENDING_SOON: "WhatsApp de fim de plano enviado",
 };
 
 export const AUDIT_ENTITIES = [

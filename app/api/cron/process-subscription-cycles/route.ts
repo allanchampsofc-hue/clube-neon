@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
 import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { formatDate } from "@/lib/dates";
 
 function renderTemplate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (_, key: string) => vars[key] ?? "");
@@ -15,9 +16,15 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
 
+  const { data: notifConfig } = await supabase
+    .from("system_config")
+    .select("notify_credit_released, credit_released_message, notify_plan_ending, plan_ending_message")
+    .limit(1)
+    .single();
+
   const { data: dueSubscriptions, error } = await supabase
     .from("subscriptions")
-    .select("id")
+    .select("id, customer:customers(id, name, phone)")
     .eq("status", "ATIVA")
     .lte("current_period_end", new Date().toISOString());
 
@@ -26,18 +33,59 @@ export async function GET(request: NextRequest) {
   }
 
   const results: Array<{ subscriptionId: string; ok: boolean; error?: string }> = [];
+  let creditReleasedNotified = 0;
 
-  for (const subscription of dueSubscriptions ?? []) {
-    const { error: rpcError } = await supabase.rpc(
-      "process_subscription_cycle_rollover",
-      { p_subscription_id: subscription.id },
-    );
+  for (const subscription of (dueSubscriptions ?? []) as unknown as Array<{
+    id: string;
+    customer: { id: string; name: string; phone: string | null } | null;
+  }>) {
+    const { data: newCycle, error: rpcError } = await supabase
+      .rpc("process_subscription_cycle_rollover", { p_subscription_id: subscription.id })
+      .single();
 
     results.push({
       subscriptionId: subscription.id,
       ok: !rpcError,
       error: rpcError?.message,
     });
+
+    // Só notifica no rollover mensal normal (Ramo 3): a RPC nunca produz
+    // cycle_number 1 via rollover (o primeiro ciclo é criado na ativação),
+    // então todo retorno aqui já é mês 2+ — a checagem abaixo é defensiva.
+    const cycle = newCycle as { cycle_number: number; period_end: string; is_grace_period: boolean } | null;
+    if (
+      !rpcError &&
+      cycle &&
+      !cycle.is_grace_period &&
+      cycle.cycle_number > 1 &&
+      notifConfig?.notify_credit_released &&
+      subscription.customer?.phone
+    ) {
+      const message = renderTemplate(notifConfig.credit_released_message, {
+        nome: subscription.customer.name,
+        data_fim_ciclo: formatDate(cycle.period_end),
+      });
+      try {
+        await sendWhatsAppMessage(subscription.customer.phone, message);
+        creditReleasedNotified += 1;
+        await supabase.from("audit_logs").insert({
+          action: "WHATSAPP_CREDIT_RELEASED",
+          entity: "subscription",
+          entity_id: subscription.id,
+          after_state: { cycle_number: cycle.cycle_number },
+        });
+      } catch (whatsappError) {
+        await supabase.from("audit_logs").insert({
+          action: "WHATSAPP_SEND_FAILED",
+          entity: "subscription",
+          entity_id: subscription.id,
+          after_state: {
+            context: "credit_released",
+            error: whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
+          },
+        });
+      }
+    }
   }
 
   const { data: cancelledCount, error: cancellationError } = await supabase.rpc(
@@ -100,13 +148,66 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  let planEndingNotified = 0;
+  if (notifConfig?.notify_plan_ending) {
+    const { data: endingSoon } = await supabase.rpc("get_subscriptions_needing_plan_ending_notice");
+
+    for (const row of (endingSoon ?? []) as Array<{
+      subscription_id: string;
+      customer_id: string;
+      customer_name: string;
+      customer_phone: string | null;
+      months_remaining: number;
+      plan_end_date: string;
+    }>) {
+      if (!row.customer_phone) continue;
+
+      const message = renderTemplate(notifConfig.plan_ending_message, {
+        nome: row.customer_name,
+        data_fim: formatDate(row.plan_end_date),
+        meses_restantes: String(row.months_remaining),
+      });
+
+      try {
+        await sendWhatsAppMessage(row.customer_phone, message);
+        planEndingNotified += 1;
+        await supabase.from("audit_logs").insert({
+          action: "WHATSAPP_PLAN_ENDING_SOON",
+          entity: "subscription",
+          entity_id: row.subscription_id,
+          after_state: { months_remaining: row.months_remaining },
+        });
+      } catch (whatsappError) {
+        await supabase.from("audit_logs").insert({
+          action: "WHATSAPP_SEND_FAILED",
+          entity: "subscription",
+          entity_id: row.subscription_id,
+          after_state: {
+            context: "plan_ending",
+            error: whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
+          },
+        });
+      }
+
+      // Marca como avisado mesmo se o WhatsApp falhar — não queremos
+      // reenviar todo dia só porque o Z-API estava fora do ar uma vez;
+      // mesma filosofia de "falha no WhatsApp nunca trava/repete o fluxo".
+      await supabase
+        .from("subscriptions")
+        .update({ plan_ending_notified_at: new Date().toISOString() })
+        .eq("id", row.subscription_id);
+    }
+  }
+
   return NextResponse.json({
     processed: results.length,
     results,
+    creditReleasedNotified,
     scheduledCancellationsProcessed: cancelledCount ?? 0,
     scheduledCancellationsError: cancellationError?.message,
     membershipLevelsError: levelError?.message,
     membershipChanges: levelChanges.filter((c) => c.changed).length,
     membershipNotified: notified,
+    planEndingNotified,
   });
 }
