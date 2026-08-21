@@ -19,6 +19,12 @@
 --    (nem UTILIZADO nem já vinha certo) como rejeição.
 -- ----------------------------------------------------------------------------
 
+-- O tipo de retorno muda de "vouchers" (linha única) pra "setof vouchers"
+-- (zero ou uma linha) — Postgres não deixa "create or replace" trocar o tipo
+-- de retorno, precisa dropar antes.
+drop function if exists generate_bimonthly_voucher(uuid);
+drop function if exists generate_monthly_frete(uuid);
+
 create or replace function generate_bimonthly_voucher(p_subscription_id uuid)
 returns setof vouchers
 language plpgsql
