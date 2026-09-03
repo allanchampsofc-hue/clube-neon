@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { CheckIcon, ClipboardCheckIcon, PizzaIcon, ZapIcon } from "lucide-react";
+import { ArrowRightIcon, CheckIcon, ClipboardCheckIcon, PizzaIcon, ZapIcon } from "lucide-react";
 import { getCurrentUser, getUserRoleCodes, STAFF_ROLES } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatCents } from "@/lib/money";
@@ -176,39 +176,78 @@ export default async function LandingPage({
       </header>
 
       {/* Seção 1 — Hero */}
-      <section className="flex flex-col items-center gap-6 bg-primary px-6 pt-32 pb-20 text-center text-primary-foreground">
-        <Image
-          src="/clube-neon-hero.png"
-          alt="Clube Neon — pessoas comemorando com pizza"
-          width={512}
-          height={512}
-          priority
-          className="w-full max-w-xs rounded-2xl sm:max-w-sm"
-        />
-        <h1 className="max-w-3xl font-heading text-3xl font-extrabold text-balance sm:text-5xl">
-          🎉 CLUBE NEON – CRÉDITO TODO MÊS PRA COMER NA NEON
-        </h1>
-        <p className="max-w-xl text-lg text-primary-foreground/90">
-          Dois planos: Essencial ({formatCents(essencial.monthlyCreditCents)}/mês) ou
-          Completo ({formatCents(completo.monthlyCreditCents)}/mês + vouchers). Parcelado
-          em 12x ou à vista, com desconto.
-        </p>
-        <p className="max-w-xl text-sm text-primary-foreground/70">
-          O crédito de cada mês vale só naquele mês — não acumula.
-        </p>
-        <div className="flex flex-col items-center gap-4 sm:flex-row">
-          <a
-            href="#plano"
-            className={buttonVariants({ variant: "secondary", size: "lg" })}
-          >
-            QUERO SER MEMBRO
-          </a>
-          <a
-            href="#como-funciona"
-            className="text-sm font-medium text-primary-foreground/80 underline underline-offset-4 hover:text-primary-foreground"
-          >
-            COMO FUNCIONA
-          </a>
+      <section className="bg-primary px-6 pt-28 pb-16 text-primary-foreground sm:pt-32 sm:pb-20 lg:px-12 lg:pt-40 lg:pb-24">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-6 text-center lg:grid lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-12 lg:text-left">
+          <div className="flex flex-col items-center gap-5 lg:items-start">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-primary-foreground/90 uppercase">
+              Clube Neon 🍕
+            </span>
+
+            <h1 className="max-w-xl font-heading text-3xl font-extrabold text-balance sm:text-4xl lg:text-5xl">
+              Você paga {formatCents(essencial.monthlyPriceCents)}.{" "}
+              <span className="text-secondary">
+                A Neon te dá {formatCents(essencial.monthlyCreditCents)}.
+              </span>
+            </h1>
+
+            <p className="max-w-md text-lg font-medium text-primary-foreground/90">
+              Todo mês, pra aproveitar na Neon.
+            </p>
+
+            <div className="flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
+              <div>
+                <p className="text-[0.65rem] font-semibold tracking-wide text-primary-foreground/70 uppercase">
+                  Você paga
+                </p>
+                <p className="font-heading text-2xl font-bold">
+                  {formatCents(essencial.monthlyPriceCents)}
+                </p>
+              </div>
+              <ArrowRightIcon className="size-5 shrink-0 text-secondary" aria-hidden="true" />
+              <div>
+                <p className="text-[0.65rem] font-semibold tracking-wide text-primary-foreground/70 uppercase">
+                  Você recebe
+                </p>
+                <p className="font-heading text-2xl font-bold text-secondary">
+                  {formatCents(essencial.monthlyCreditCents)}
+                </p>
+              </div>
+            </div>
+
+            <p className="max-w-md text-sm text-primary-foreground/80">
+              Ou vá de Completo: {formatCents(completo.monthlyPriceCents)}/mês →{" "}
+              {formatCents(completo.monthlyCreditCents)} em créditos, com voucher de pizza 2x1 e
+              frete grátis.
+            </p>
+
+            <div className="flex flex-col items-center gap-3 sm:flex-row lg:items-start">
+              <a
+                href="#plano"
+                className={buttonVariants({ variant: "secondary", size: "lg" })}
+              >
+                QUERO ENTRAR PARA O CLUBE
+              </a>
+              <a
+                href="#como-funciona"
+                className="text-sm font-medium text-primary-foreground/80 underline underline-offset-4 hover:text-primary-foreground"
+              >
+                COMO FUNCIONA
+              </a>
+            </div>
+            <p className="text-xs text-primary-foreground/60">
+              A partir de {formatCents(essencial.monthlyPriceCents)}/mês · Plano de 12 meses ·
+              Crédito mensal para consumo na Neon
+            </p>
+          </div>
+
+          <Image
+            src="/clube-neon-hero.png"
+            alt="Clube Neon — pessoas comemorando com pizza"
+            width={512}
+            height={512}
+            priority
+            className="w-40 rounded-2xl sm:w-56 lg:w-full lg:max-w-sm lg:justify-self-end"
+          />
         </div>
       </section>
 
