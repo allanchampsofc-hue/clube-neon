@@ -184,9 +184,9 @@ export default async function LandingPage({
             </span>
 
             <h1 className="max-w-xl font-heading text-3xl font-extrabold text-balance sm:text-4xl lg:text-5xl">
-              Você paga {formatCents(essencial.monthlyPriceCents)}.{" "}
+              Pague {formatCents(essencial.monthlyPriceCents)}{" "}
               <span className="text-secondary">
-                A Neon te dá {formatCents(essencial.monthlyCreditCents)}.
+                e tenha {formatCents(essencial.monthlyCreditCents)} em créditos.
               </span>
             </h1>
 
@@ -197,7 +197,7 @@ export default async function LandingPage({
             <div className="flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
               <div>
                 <p className="text-[0.65rem] font-semibold tracking-wide text-primary-foreground/70 uppercase">
-                  Você paga
+                  Paga
                 </p>
                 <p className="font-heading text-2xl font-bold">
                   {formatCents(essencial.monthlyPriceCents)}
@@ -206,18 +206,18 @@ export default async function LandingPage({
               <ArrowRightIcon className="size-5 shrink-0 text-secondary" aria-hidden="true" />
               <div>
                 <p className="text-[0.65rem] font-semibold tracking-wide text-primary-foreground/70 uppercase">
-                  Você recebe
+                  Tem
                 </p>
                 <p className="font-heading text-2xl font-bold text-secondary">
-                  {formatCents(essencial.monthlyCreditCents)}
+                  {formatCents(essencial.monthlyCreditCents)} em créditos
                 </p>
               </div>
             </div>
 
             <p className="max-w-md text-sm text-primary-foreground/80">
-              Ou vá de Completo: {formatCents(completo.monthlyPriceCents)}/mês →{" "}
-              {formatCents(completo.monthlyCreditCents)} em créditos, com voucher de pizza 2x1 e
-              frete grátis.
+              Faça parte do Clube Neon e tenha {formatCents(essencial.monthlyCreditCents)} em
+              créditos mensais para consumir na pizzaria, pagando apenas{" "}
+              {formatCents(essencial.monthlyPriceCents)} por mês.
             </p>
 
             <div className="flex flex-col items-center gap-3 sm:flex-row lg:items-start">
@@ -235,9 +235,14 @@ export default async function LandingPage({
               </a>
             </div>
             <p className="text-xs text-primary-foreground/60">
-              A partir de {formatCents(essencial.monthlyPriceCents)}/mês · Plano de 12 meses ·
-              Crédito mensal para consumo na Neon
+              Plano de 12 meses · Crédito mensal para consumo na Neon
             </p>
+            <a
+              href="#plano"
+              className="text-xs text-primary-foreground/60 underline underline-offset-4 hover:text-primary-foreground/90"
+            >
+              Quer ainda mais benefícios? Conheça também o Plano Completo.
+            </a>
           </div>
 
           <Image
