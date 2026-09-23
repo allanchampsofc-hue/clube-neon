@@ -6,6 +6,7 @@ import { getStoredWaiterPin, clearWaiterSession } from "../session";
 import { Button } from "@/components/ui/button";
 import { CreditFlow } from "./credit-flow";
 import { VoucherFlow } from "./voucher-flow";
+import { PromoVoucherFlow } from "./promo-voucher-flow";
 
 export function useWaiterSession(): string | null {
   const router = useRouter();
@@ -33,7 +34,7 @@ export function useWaiterSession(): string | null {
 export default function GarcomValidarPage() {
   const router = useRouter();
   const pin = useWaiterSession();
-  const [mode, setMode] = useState<"credito" | "voucher">("credito");
+  const [mode, setMode] = useState<"credito" | "voucher" | "avulso">("credito");
 
   function handleSair() {
     clearWaiterSession();
@@ -68,10 +69,19 @@ export default function GarcomValidarPage() {
         >
           Voucher
         </Button>
+        <Button
+          size="sm"
+          variant={mode === "avulso" ? "default" : "outline"}
+          onClick={() => setMode("avulso")}
+        >
+          Voucher avulso
+        </Button>
       </div>
 
       <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 py-8">
-        {mode === "credito" ? <CreditFlow pin={pin} /> : <VoucherFlow pin={pin} />}
+        {mode === "credito" ? <CreditFlow pin={pin} /> : null}
+        {mode === "voucher" ? <VoucherFlow pin={pin} /> : null}
+        {mode === "avulso" ? <PromoVoucherFlow pin={pin} /> : null}
       </main>
     </div>
   );

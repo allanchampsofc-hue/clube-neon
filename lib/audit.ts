@@ -30,6 +30,11 @@ export const AUDIT_ACTIONS = [
   "VOUCHER_REDEEMED",
   "VOUCHER_CODE_INVALID",
   "VOUCHERS_EXPIRED",
+  "PROMO_VOUCHER_GENERATED",
+  "PROMO_VOUCHER_REDEEMED",
+  "PROMO_VOUCHER_CANCELLED",
+  "PROMO_VOUCHER_CODE_INVALID",
+  "PROMO_VOUCHERS_EXPIRED",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -66,6 +71,11 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   VOUCHER_REDEEMED: "Voucher resgatado",
   VOUCHER_CODE_INVALID: "Código de voucher inválido ou expirado informado",
   VOUCHERS_EXPIRED: "Vouchers expirados",
+  PROMO_VOUCHER_GENERATED: "Voucher avulso gerado",
+  PROMO_VOUCHER_REDEEMED: "Voucher avulso resgatado",
+  PROMO_VOUCHER_CANCELLED: "Voucher avulso cancelado",
+  PROMO_VOUCHER_CODE_INVALID: "Código de voucher avulso inválido ou expirado informado",
+  PROMO_VOUCHERS_EXPIRED: "Vouchers avulsos expirados",
 };
 
 export const AUDIT_ENTITIES = [
@@ -76,4 +86,5 @@ export const AUDIT_ENTITIES = [
   "credit_use_request",
   "system_config",
   "voucher",
+  "promo_voucher",
 ] as const;

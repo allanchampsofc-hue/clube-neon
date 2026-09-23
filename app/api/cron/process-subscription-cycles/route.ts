@@ -152,6 +152,10 @@ export async function GET(request: NextRequest) {
     "expire_old_vouchers",
   );
 
+  const { data: expiredPromoVouchersCount, error: promoVoucherExpireError } = await supabase.rpc(
+    "expire_old_promo_vouchers",
+  );
+
   const { data: levelChangesData, error: levelError } = await supabase.rpc(
     "update_membership_levels",
   );
@@ -266,6 +270,8 @@ export async function GET(request: NextRequest) {
     vouchersGenerated,
     expiredVouchersCount: expiredVouchersCount ?? 0,
     voucherExpireError: voucherExpireError?.message,
+    expiredPromoVouchersCount: expiredPromoVouchersCount ?? 0,
+    promoVoucherExpireError: promoVoucherExpireError?.message,
     scheduledCancellationsProcessed: cancelledCount ?? 0,
     scheduledCancellationsError: cancellationError?.message,
     membershipLevelsError: levelError?.message,
