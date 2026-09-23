@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("promo_vouchers")
     .select(
-      "code, campaign_name, benefit_description, price_paid_cents, payment_method, buyer_name, buyer_phone, status, created_at, valid_until, used_at",
+      "code, campaign_name, benefit_description, price_paid_cents, payment_method, buyer_name, buyer_phone, status, created_at, valid_until, used_at, sent_at",
     )
     .order("created_at", { ascending: false })
     .limit(5000);
@@ -43,6 +43,7 @@ export async function GET(request: NextRequest) {
     created_at: string;
     valid_until: string;
     used_at: string | null;
+    sent_at: string | null;
   }>;
 
   const csv = buildCsv(
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
       "Gerado em",
       "Válido até",
       "Utilizado em",
+      "Enviado ao cliente",
     ],
     rows.map((r) => [
       csvEscape(r.code),
@@ -71,6 +73,7 @@ export async function GET(request: NextRequest) {
       csvEscape(formatDate(r.created_at)),
       csvEscape(formatDate(r.valid_until)),
       csvEscape(r.used_at ? formatDate(r.used_at) : ""),
+      csvEscape(r.sent_at ? formatDate(r.sent_at) : "Não"),
     ]),
   );
 

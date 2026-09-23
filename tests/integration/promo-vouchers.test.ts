@@ -120,6 +120,57 @@ describeIfEnv("Vouchers avulsos — geração, resgate e tela do garçom (integr
     });
   });
 
+  describe("marcação de 'já enviado' (mark_promo_voucher_sent)", () => {
+    it("gerente marca voucher como enviado", async () => {
+      const { data: generatedData } = await generateAsManager();
+      const voucher = (generatedData as Array<{ id: string }>)[0];
+
+      await signInTestUser(managerEmail, PASSWORD);
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .rpc("mark_promo_voucher_sent", { p_voucher_id: voucher.id })
+        .single();
+
+      expect(error).toBeNull();
+      expect((data as { sent_at: string | null }).sent_at).not.toBeNull();
+
+      const { data: row } = await admin
+        .from("promo_vouchers")
+        .select("sent_at")
+        .eq("id", voucher.id)
+        .single();
+      expect(row?.sent_at).not.toBeNull();
+    });
+
+    it("operador (não gerente) não consegue marcar como enviado", async () => {
+      const { data: generatedData } = await generateAsManager();
+      const voucher = (generatedData as Array<{ id: string }>)[0];
+
+      const email = testEmail("operador-sent");
+      const userId = await createTestAuthUser(email, PASSWORD);
+      await assignTestRole(userId, "OPERADOR");
+      await signInTestUser(email, PASSWORD);
+      const supabase = await createClient();
+
+      const { error } = await supabase.rpc("mark_promo_voucher_sent", {
+        p_voucher_id: voucher.id,
+      });
+      expect(error).not.toBeNull();
+
+      await cleanupTestAuthUser(userId);
+    });
+
+    it("voucher inexistente retorna erro claro", async () => {
+      await signInTestUser(managerEmail, PASSWORD);
+      const supabase = await createClient();
+      const { error } = await supabase.rpc("mark_promo_voucher_sent", {
+        p_voucher_id: "00000000-0000-0000-0000-000000000000",
+      });
+      expect(error).not.toBeNull();
+      expect(error!.message).toMatch(/não encontrado/i);
+    });
+  });
+
   describe("resgate e validação", () => {
     async function insertVoucher(overrides: Partial<{ status: string; validUntil: Date }> = {}) {
       const code = String(Math.floor(100000 + Math.random() * 900000));

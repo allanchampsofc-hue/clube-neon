@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/card";
 import { cancelPromoVoucher } from "./actions";
 import { getVoucherPublicUrl } from "@/lib/site-url";
+import { CopyCodeButton } from "./copy-code-button";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -38,6 +39,7 @@ type PromoVoucherRow = {
   created_at: string;
   valid_until: string;
   used_at: string | null;
+  sent_at: string | null;
 };
 
 export default async function VouchersAvulsosPage({
@@ -48,16 +50,29 @@ export default async function VouchersAvulsosPage({
   const status = first(sp.status);
   const campanha = first(sp.campanha);
   const generatedCodes = first(sp.generated)?.split(",").filter(Boolean) ?? [];
-  const generatedLinks = await Promise.all(
-    generatedCodes.map(async (code) => ({ code, url: await getVoucherPublicUrl(code) })),
-  );
 
   const supabase = await createClient();
+
+  const { data: generatedRows } =
+    generatedCodes.length > 0
+      ? await supabase
+          .from("promo_vouchers")
+          .select("id, code, sent_at")
+          .in("code", generatedCodes)
+      : { data: [] as Array<{ id: string; code: string; sent_at: string | null }> };
+  const generatedLinks = await Promise.all(
+    (generatedRows ?? []).map(async (row) => ({
+      id: row.id,
+      code: row.code,
+      sentAt: row.sent_at,
+      url: await getVoucherPublicUrl(row.code),
+    })),
+  );
 
   let query = supabase
     .from("promo_vouchers")
     .select(
-      "id, code, campaign_name, benefit_description, price_paid_cents, payment_method, buyer_name, buyer_phone, status, created_at, valid_until, used_at",
+      "id, code, campaign_name, benefit_description, price_paid_cents, payment_method, buyer_name, buyer_phone, status, created_at, valid_until, used_at, sent_at",
     )
     .order("created_at", { ascending: false })
     .limit(500);
@@ -111,7 +126,7 @@ export default async function VouchersAvulsosPage({
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-2">
-              {generatedLinks.map(({ code, url }) => (
+              {generatedLinks.map(({ id, code, url, sentAt }) => (
                 <div
                   key={code}
                   className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-secondary bg-background px-3 py-2"
@@ -127,6 +142,7 @@ export default async function VouchersAvulsosPage({
                   >
                     {url}
                   </a>
+                  <CopyCodeButton voucherId={id} code={code} initialSent={Boolean(sentAt)} />
                 </div>
               ))}
             </div>
@@ -197,6 +213,7 @@ export default async function VouchersAvulsosPage({
               <th className="px-3 py-2 font-medium">Comprador</th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium">Válido até</th>
+              <th className="px-3 py-2 font-medium">Envio</th>
               <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>
@@ -218,6 +235,15 @@ export default async function VouchersAvulsosPage({
                 <td className="px-3 py-2">{formatDate(v.valid_until)}</td>
                 <td className="px-3 py-2">
                   {v.status === "DISPONIVEL" ? (
+                    <CopyCodeButton voucherId={v.id} code={v.code} initialSent={Boolean(v.sent_at)} />
+                  ) : v.sent_at ? (
+                    <span className="text-xs font-medium text-secondary">✓ Enviado</span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {v.status === "DISPONIVEL" ? (
                     <form action={cancelPromoVoucher.bind(null, v.id)}>
                       <Button type="submit" variant="ghost" size="sm" className="text-destructive">
                         Cancelar
@@ -229,7 +255,7 @@ export default async function VouchersAvulsosPage({
             ))}
             {vouchers.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
+                <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
                   Nenhum voucher avulso encontrado.
                 </td>
               </tr>

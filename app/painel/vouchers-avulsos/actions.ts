@@ -96,6 +96,23 @@ export async function generatePromoVouchers(formData: FormData) {
   redirect(`/painel/vouchers-avulsos?generated=${encodeURIComponent(codes)}`);
 }
 
+/**
+ * Chamada direto do client (botão "Copiar código"), não de um <form> — por
+ * isso não usa redirect(), só lança erro pro componente cliente tratar.
+ * Não bloqueia nada: é só um sinalizador visual no painel pra evitar mandar
+ * o mesmo código pra dois clientes por engano.
+ */
+export async function markPromoVoucherSent(voucherId: string) {
+  await requireManager();
+  const supabase = await createClient();
+
+  const { error } = await supabase.rpc("mark_promo_voucher_sent", {
+    p_voucher_id: voucherId,
+  });
+
+  if (error) throw new Error(error.message);
+}
+
 export async function cancelPromoVoucher(voucherId: string) {
   await requireManager();
   const supabase = await createClient();
