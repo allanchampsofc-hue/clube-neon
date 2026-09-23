@@ -35,6 +35,7 @@ export const AUDIT_ACTIONS = [
   "PROMO_VOUCHER_CANCELLED",
   "PROMO_VOUCHER_CODE_INVALID",
   "PROMO_VOUCHERS_EXPIRED",
+  "PROMO_VOUCHER_PUBLIC_CODE_INVALID",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -76,6 +77,7 @@ export const AUDIT_ACTION_LABELS: Record<AuditAction, string> = {
   PROMO_VOUCHER_CANCELLED: "Voucher avulso cancelado",
   PROMO_VOUCHER_CODE_INVALID: "Código de voucher avulso inválido ou expirado informado",
   PROMO_VOUCHERS_EXPIRED: "Vouchers avulsos expirados",
+  PROMO_VOUCHER_PUBLIC_CODE_INVALID: "Código inválido acessado na página pública do voucher",
 };
 
 export const AUDIT_ENTITIES = [

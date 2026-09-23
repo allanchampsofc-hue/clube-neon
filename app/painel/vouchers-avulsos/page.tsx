@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cancelPromoVoucher } from "./actions";
+import { getVoucherPublicUrl } from "@/lib/site-url";
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -47,6 +48,9 @@ export default async function VouchersAvulsosPage({
   const status = first(sp.status);
   const campanha = first(sp.campanha);
   const generatedCodes = first(sp.generated)?.split(",").filter(Boolean) ?? [];
+  const generatedLinks = await Promise.all(
+    generatedCodes.map(async (code) => ({ code, url: await getVoucherPublicUrl(code) })),
+  );
 
   const supabase = await createClient();
 
@@ -100,19 +104,30 @@ export default async function VouchersAvulsosPage({
                 : `${generatedCodes.length} códigos gerados com sucesso`}
             </CardTitle>
             <CardDescription>
-              Anote ou distribua os códigos abaixo — eles não aparecem de novo nesse
-              destaque depois que você sair da página.
+              Anote, copie o link ou distribua os códigos abaixo — eles não aparecem de
+              novo nesse destaque depois que você sair da página. Abrindo o link, o
+              cliente já vê o código e o benefício numa página com a cara do Clube Neon.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {generatedCodes.map((code) => (
-                <span
+            <div className="flex flex-col gap-2">
+              {generatedLinks.map(({ code, url }) => (
+                <div
                   key={code}
-                  className="rounded-lg border-2 border-secondary bg-background px-3 py-1.5 font-mono text-lg font-bold tracking-wider text-primary"
+                  className="flex flex-wrap items-center gap-3 rounded-lg border-2 border-secondary bg-background px-3 py-2"
                 >
-                  {code}
-                </span>
+                  <span className="font-mono text-lg font-bold tracking-wider text-primary">
+                    {code}
+                  </span>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-secondary underline underline-offset-4"
+                  >
+                    {url}
+                  </a>
+                </div>
               ))}
             </div>
           </CardContent>

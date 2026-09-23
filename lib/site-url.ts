@@ -7,3 +7,9 @@ export async function getSiteOrigin(): Promise<string> {
   const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
 }
+
+/** Link público de resgate de um voucher avulso — usado no painel e no WhatsApp. */
+export async function getVoucherPublicUrl(code: string): Promise<string> {
+  const origin = await getSiteOrigin();
+  return `${origin}/voucher/${code}`;
+}

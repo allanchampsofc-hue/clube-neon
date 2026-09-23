@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireManager } from "@/lib/auth";
 import { reaisToCents } from "@/lib/money";
+import { sendWhatsAppMessage } from "@/lib/whatsapp";
+import { getVoucherPublicUrl } from "@/lib/site-url";
 import type { PromoVoucherPaymentMethod } from "@/lib/promo-vouchers";
 
 const PAYMENT_METHODS: PromoVoucherPaymentMethod[] = ["PIX", "DINHEIRO", "CARTAO"];
@@ -65,7 +67,32 @@ export async function generatePromoVouchers(formData: FormData) {
     redirect(`/painel/vouchers-avulsos/novo?error=${encodeURIComponent(error.message)}`);
   }
 
-  const codes = ((data ?? []) as Array<{ code: string }>).map((v) => v.code).join(",");
+  const generated = (data ?? []) as Array<{ id: string; code: string }>;
+  const codes = generated.map((v) => v.code).join(",");
+
+  // Manda o link por WhatsApp só quando dá pra saber pra quem é (1 código +
+  // telefone informado) — em lote não faria sentido mandar N códigos pro
+  // mesmo número. Falha de envio nunca bloqueia a geração, mesmo padrão
+  // usado nos avisos automáticos do clube.
+  if (buyerPhone && generated.length === 1) {
+    const url = await getVoucherPublicUrl(generated[0].code);
+    const greeting = buyerName ? `Oi, ${buyerName}!` : "Oi!";
+    const message = `${greeting} Aqui está seu voucher da Neon Pizzaria 🍕\n\n${benefitDescription}\n\nAcesse: ${url}`;
+    try {
+      await sendWhatsAppMessage(buyerPhone, message);
+    } catch (whatsappError) {
+      await supabase.from("audit_logs").insert({
+        action: "WHATSAPP_SEND_FAILED",
+        entity: "promo_voucher",
+        entity_id: generated[0].id,
+        after_state: {
+          context: "promo_voucher",
+          error: whatsappError instanceof Error ? whatsappError.message : String(whatsappError),
+        },
+      });
+    }
+  }
+
   redirect(`/painel/vouchers-avulsos?generated=${encodeURIComponent(codes)}`);
 }
 
